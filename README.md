@@ -2,6 +2,20 @@
 
 A web application for classroom presentation evaluations for the COMS4152 project. Instructors can create presentation events, students can submit evaluations, and presenters can view anonymous feedback.
 
+## Team Members
+
+| Name | UNI |
+|------|-----|
+| Dan Lin | dl3762 |
+| Kaizhuo Hu | kh3482 |
+| Xuhang Yuan | xy2757 |
+| Jiajun Chen | jc6949 |
+
+## Links
+
+- **GitHub:** https://github.com/KevinHu-Create/COMS4152
+- **Heroku:** _coming soon_
+
 ## Tech Stack
 
 - **Frontend:** React + TypeScript + Vite
