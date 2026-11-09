@@ -138,5 +138,15 @@ Evaluation.create!([
   }
 ])
 
+# The records above use explicit ids. PostgreSQL does not advance its id
+# sequences for those, so move them past the seeded rows; otherwise the
+# next signup would collide with user_id 1.
+connection = ActiveRecord::Base.connection
+if connection.adapter_name.match?(/postg/i)
+  [User, Course, CourseMembership, Presentation, Evaluation].each do |model|
+    connection.reset_pk_sequence!(model.table_name)
+  end
+end
+
 puts "Seed data loaded successfully!"
 

@@ -20,6 +20,9 @@ test:
   <<: *default
   database: storage/test.sqlite3
 
+# Heroku provides DATABASE_URL when the Postgres add-on is attached.
 production:
-  <<: *default
-  database: storage/production.sqlite3
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  url: <%= ENV["DATABASE_URL"] %>

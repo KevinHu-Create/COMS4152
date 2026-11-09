@@ -14,13 +14,15 @@ A web application for classroom presentation evaluations for the COMS4152 projec
 ## Links
 
 - **GitHub:** https://github.com/KevinHu-Create/COMS4152
-- **Heroku:** _coming soon_
+- **Heroku:** https://coms4152-presentation-eval-aa337b06126f.herokuapp.com
+
+  Sign in with any of the demo accounts listed under [Test Accounts](#test-accounts).
 
 ## Tech Stack
 
 - **Frontend:** React + TypeScript + Vite
-- **Backend:** Ruby on Rails 7.1 
-- **Database:** SQLite3
+- **Backend:** Ruby on Rails 7.1
+- **Database:** SQLite3 locally, PostgreSQL on Heroku
 
 ## Features
 
@@ -171,6 +173,27 @@ COMS4152/
 ├── schema.sql              # Database schema
 └── README.md
 ```
+
+## Deployment (Heroku)
+
+The app is deployed as a single Heroku app on the **container stack**. The root `Dockerfile` builds the React client with `VITE_API_BASE_URL=/api/v1` and copies it into the Rails app's `public/`, so Rails serves both the API and the frontend from the same origin. `heroku.yml` runs `rails db:prepare` in the release phase, which creates the PostgreSQL tables from `server/db/schema.rb` and loads the demo seeds on the first deploy.
+
+First-time setup (already done for the app above):
+
+```bash
+heroku create <app-name> --stack container
+heroku addons:create heroku-postgresql:essential-0
+heroku config:set SECRET_KEY_BASE=$(openssl rand -hex 64)
+git push heroku main
+```
+
+To redeploy after changes are merged into `main`:
+
+```bash
+git push heroku main
+```
+
+`server/db/schema.rb` (used on Heroku) mirrors `schema.sql` (used locally), so keep the two in sync when the schema changes.
 
 ## Database Reset
 

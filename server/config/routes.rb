@@ -27,4 +27,9 @@ Rails.application.routes.draw do
   end
 
   get "up" => "rails/health#show", as: :rails_health_check
+
+  # Everything else is a page of the React single-page app.
+  root "frontend#index"
+  get "*path", to: "frontend#index",
+               constraints: ->(req) { !req.path.start_with?("/api/", "/docs") && req.format.html? }
 end

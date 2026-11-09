@@ -1,0 +1,8 @@
+# Heroku container deployment: `heroku stack:set container`, then `git push heroku main`.
+build:
+  docker:
+    web: Dockerfile
+release:
+  image: web
+  command:
+    - bundle exec rails db:prepare
