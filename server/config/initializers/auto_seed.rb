@@ -1,5 +1,8 @@
 # Auto create database and seed if empty
 Rails.application.config.after_initialize do
+  # The test suite manages its own database (see spec/support/database_schema.rb)
+  next if Rails.env.test?
+
   db_path = Rails.root.join('storage', 'development.sqlite3')
   schema_path = Rails.root.join('..', 'schema.sql')
 

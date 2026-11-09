@@ -1,5 +1,6 @@
 class Api::V1::PresentationsController < ApplicationController
   before_action :set_presentation, only: [:show, :update, :destroy, :feedback, :stats]
+  before_action :require_staff!, only: [:create, :update, :destroy]
 
   # GET /api/v1/courses/:course_id/presentations
   def index
@@ -56,10 +57,10 @@ class Api::V1::PresentationsController < ApplicationController
     evals = @presentation.evaluations
     render json: {
       presentation: presentation_response(@presentation),
-      avgClarity: evals.average(:clarity_score)&.round(1),
-      avgOrganization: evals.average(:organization_score)&.round(1),
-      avgDelivery: evals.average(:delivery_score)&.round(1),
-      avgOverall: evals.average(:overall_score)&.round(1),
+      avgClarity: average(evals, :clarity_score),
+      avgOrganization: average(evals, :organization_score),
+      avgDelivery: average(evals, :delivery_score),
+      avgOverall: average(evals, :overall_score),
       comments: evals.pluck(:comments).compact,
       evaluationCount: evals.count
     }
@@ -87,10 +88,10 @@ class Api::V1::PresentationsController < ApplicationController
         }
       },
       stats: {
-        avgClarity: evals.average(:clarity_score)&.round(1),
-        avgOrganization: evals.average(:organization_score)&.round(1),
-        avgDelivery: evals.average(:delivery_score)&.round(1),
-        avgOverall: evals.average(:overall_score)&.round(1),
+        avgClarity: average(evals, :clarity_score),
+        avgOrganization: average(evals, :organization_score),
+        avgDelivery: average(evals, :delivery_score),
+        avgOverall: average(evals, :overall_score),
         totalEvaluations: evals.count
       }
     }
@@ -107,10 +108,10 @@ class Api::V1::PresentationsController < ApplicationController
         title: p.title,
         date: p.presentation_date,
         course: p.course.course_code,
-        avgClarity: evals.average(:clarity_score)&.round(1),
-        avgOrganization: evals.average(:organization_score)&.round(1),
-        avgDelivery: evals.average(:delivery_score)&.round(1),
-        avgOverall: evals.average(:overall_score)&.round(1),
+        avgClarity: average(evals, :clarity_score),
+        avgOrganization: average(evals, :organization_score),
+        avgDelivery: average(evals, :delivery_score),
+        avgOverall: average(evals, :overall_score),
         comments: evals.pluck(:comments).compact,
         evaluationCount: evals.count
       }
@@ -118,6 +119,16 @@ class Api::V1::PresentationsController < ApplicationController
   end
 
   private
+
+  # AVG() comes back as BigDecimal, which Rails serialises as a JSON string;
+  # return a plain number so the frontend can format it.
+  def average(evals, column)
+    evals.average(column)&.to_f&.round(1)
+  end
+
+  def require_staff!
+    render json: { error: 'Not authorized' }, status: :forbidden unless admin_or_instructor?
+  end
 
   def set_presentation
     @presentation = Presentation.find(params[:id])
