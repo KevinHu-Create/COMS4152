@@ -1,4 +1,6 @@
-const API_BASE = 'http://localhost:3000/api/v1';
+// Override at build time with VITE_API_BASE_URL (e.g. "/api/v1" when the
+// frontend is served by the Rails app itself).
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
 
 function getToken() {
   return localStorage.getItem('token');

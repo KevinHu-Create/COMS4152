@@ -41,3 +41,8 @@ client/dist/
 # Rails decryption keys stay local
 server/config/master.key
 server/config/credentials/*.key
+
+# Test coverage reports
+server/coverage/
+server/tmp/local_secret.txt
+server/tmp/cucumber_client/

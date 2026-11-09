@@ -7,10 +7,10 @@ type PresentationFeedback = {
   title: string;
   date: string;
   course: string;
-  avgClarity: string | null;
-  avgOrganization: string | null;
-  avgDelivery: string | null;
-  avgOverall: string | null;
+  avgClarity: number | null;
+  avgOrganization: number | null;
+  avgDelivery: number | null;
+  avgOverall: number | null;
   comments: string[];
 };
 
@@ -95,7 +95,7 @@ export function PresenterFeedback() {
                       Clarity
                     </p>
                     <p className="text-base font-bold text-blue-900">
-                      {p.avgClarity || "-"}
+                      {p.avgClarity?.toFixed(1) ?? "-"}
                     </p>
                   </div>
                   <div className="bg-white rounded-lg px-3 py-2 border border-indigo-100">
@@ -103,7 +103,7 @@ export function PresenterFeedback() {
                       Organization
                     </p>
                     <p className="text-base font-bold text-indigo-900">
-                      {p.avgOrganization || "-"}
+                      {p.avgOrganization?.toFixed(1) ?? "-"}
                     </p>
                   </div>
                   <div className="bg-white rounded-lg px-3 py-2 border border-teal-100">
@@ -111,7 +111,7 @@ export function PresenterFeedback() {
                       Delivery
                     </p>
                     <p className="text-base font-bold text-teal-900">
-                      {p.avgDelivery || "-"}
+                      {p.avgDelivery?.toFixed(1) ?? "-"}
                     </p>
                   </div>
                   <div className="bg-white rounded-lg px-3 py-2 border border-amber-100">
@@ -119,7 +119,7 @@ export function PresenterFeedback() {
                       Overall
                     </p>
                     <p className="text-base font-bold text-amber-900">
-                      {p.avgOverall || "-"}
+                      {p.avgOverall?.toFixed(1) ?? "-"}
                     </p>
                   </div>
                 </div>

@@ -14,4 +14,15 @@ gem "rswag-ui"
 group :development, :test do
   gem "rswag-specs"
   gem "debug", platforms: %i[ mri windows ]
+  gem "rspec-rails", "~> 6.1"
+  gem "factory_bot_rails"
+end
+
+group :test do
+  gem "simplecov", require: false
+  gem "shoulda-matchers", "~> 6.0"
+  gem "cucumber-rails", require: false
+  gem "database_cleaner-active_record"
+  gem "capybara"
+  gem "cuprite"
 end
