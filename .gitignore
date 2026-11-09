@@ -1,0 +1,43 @@
+# Node dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+server/log/*.log
+server/tmp/cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+*.db-shm
+*.db-wal
+
+# Build output
+dist/
+build/
+
+# Vite / React frontend dependencies
+client/node_modules/
+client/dist/
+
+# Optional: VS Code settings
+.vscode/
+
+# Rails decryption keys stay local
+server/config/master.key
+server/config/credentials/*.key

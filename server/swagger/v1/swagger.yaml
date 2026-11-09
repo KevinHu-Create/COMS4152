@@ -1,0 +1,493 @@
+openapi: 3.0.1
+info:
+  title: COMS4152 Presentation Evaluation API
+  version: v1
+  description: API for classroom presentation evaluation system
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: Base64 encoded "user_id:email"
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [instructor, ta, student, admin]
+
+    Course:
+      type: object
+      properties:
+        id:
+          type: integer
+        course_code:
+          type: string
+        term:
+          type: string
+        section:
+          type: string
+        title:
+          type: string
+        instructor_id:
+          type: integer
+
+    Presentation:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+          format: date
+        startTime:
+          type: string
+        endTime:
+          type: string
+        location:
+          type: string
+        presenters:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+
+    Evaluation:
+      type: object
+      properties:
+        id:
+          type: integer
+        presentation_id:
+          type: integer
+        evaluator_id:
+          type: integer
+        clarity_score:
+          type: integer
+          minimum: 1
+          maximum: 5
+        organization_score:
+          type: integer
+          minimum: 1
+          maximum: 5
+        delivery_score:
+          type: integer
+          minimum: 1
+          maximum: 5
+        overall_score:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comments:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+paths:
+  /api/v1/login:
+    post:
+      summary: User login
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  example: student1@example.com
+                password:
+                  type: string
+                  example: DemoPass123!
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/signup:
+    post:
+      summary: User registration
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                role:
+                  type: string
+                  default: student
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+        '422':
+          description: Validation error
+
+  /api/v1/me:
+    get:
+      summary: Get current user info
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+
+  /api/v1/courses:
+    get:
+      summary: List all courses
+      tags:
+        - Courses
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Course'
+
+  /api/v1/courses/{course_id}/presentations:
+    get:
+      summary: List presentations for a course
+      tags:
+        - Presentations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: course_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of presentations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Presentation'
+
+    post:
+      summary: Create a presentation
+      tags:
+        - Presentations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: course_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - presentation_date
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                presentation_date:
+                  type: string
+                  format: date
+                start_time:
+                  type: string
+                end_time:
+                  type: string
+                location:
+                  type: string
+                presenter_ids:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        '201':
+          description: Presentation created
+        '422':
+          description: Validation error
+
+  /api/v1/presentations/{id}:
+    get:
+      summary: Get presentation details
+      tags:
+        - Presentations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Presentation details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Presentation'
+        '404':
+          description: Not found
+
+  /api/v1/presentations/{id}/stats:
+    get:
+      summary: Get presentation statistics (admin/instructor view)
+      tags:
+        - Presentations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Presentation statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  presentation:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      title:
+                        type: string
+                  averages:
+                    type: object
+                    properties:
+                      clarity:
+                        type: number
+                      organization:
+                        type: number
+                      delivery:
+                        type: number
+                      overall:
+                        type: number
+                  evaluations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Evaluation'
+
+  /api/v1/my_presentations:
+    get:
+      summary: Get current user's presentations with feedback
+      tags:
+        - Presentations
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User's presentations with anonymous feedback
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    title:
+                      type: string
+                    date:
+                      type: string
+                    course:
+                      type: string
+                    avgClarity:
+                      type: string
+                    avgOrganization:
+                      type: string
+                    avgDelivery:
+                      type: string
+                    avgOverall:
+                      type: string
+                    comments:
+                      type: array
+                      items:
+                        type: string
+                    evaluationCount:
+                      type: integer
+
+  /api/v1/presentations/{presentation_id}/evaluations:
+    get:
+      summary: List evaluations for a presentation
+      tags:
+        - Evaluations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: presentation_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of evaluations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Evaluation'
+
+    post:
+      summary: Submit an evaluation
+      tags:
+        - Evaluations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: presentation_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - clarity_score
+                - organization_score
+                - delivery_score
+                - overall_score
+              properties:
+                clarity_score:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                organization_score:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                delivery_score:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                overall_score:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comments:
+                  type: string
+      responses:
+        '201':
+          description: Evaluation submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evaluation'
+        '422':
+          description: Validation error (already evaluated or self-evaluation)
+
+  /api/v1/pending_evaluations:
+    get:
+      summary: Get presentations pending evaluation by current user
+      tags:
+        - Evaluations
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Presentations needing evaluation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Presentation'
