@@ -1,7 +1,9 @@
 # Auto create database and seed if empty
 Rails.application.config.after_initialize do
-  # The test suite manages its own database (see spec/support/database_schema.rb)
-  next if Rails.env.test?
+  # Local development only: the test suite builds its own database
+  # (spec/support/database_schema.rb) and production runs `rails db:prepare`
+  # in Heroku's release phase.
+  next unless Rails.env.development?
 
   db_path = Rails.root.join('storage', 'development.sqlite3')
   schema_path = Rails.root.join('..', 'schema.sql')

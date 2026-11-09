@@ -3,13 +3,21 @@ source "https://rubygems.org"
 ruby "3.3.3"
 
 gem "rails", "~> 7.1.5", ">= 7.1.5.2"
-gem "sqlite3", ">= 1.4"
 gem "puma", ">= 5.0"
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 gem "bootsnap", require: false
 gem "rack-cors"
 gem "rswag-api"
 gem "rswag-ui"
+
+# SQLite locally, PostgreSQL on Heroku
+group :development, :test do
+  gem "sqlite3", ">= 1.4"
+end
+
+group :production do
+  gem "pg", "~> 1.5"
+end
 
 group :development, :test do
   gem "rswag-specs"
