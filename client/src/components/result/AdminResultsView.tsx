@@ -105,12 +105,12 @@ export function AdminEventResults() {
         <StatTile elevated label="Overall" value={stats.avgOverall} accent="#ff9f0a" />
       </div>
 
-      <h2 className="text-xl font-semibold tracking-tight mb-4">Individual Evaluations</h2>
+      <h2 className="text-lg font-semibold tracking-tight mb-4">Individual Evaluations</h2>
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="text-left text-ink-3 border-b border-hair">
+              <tr className="text-left text-xs uppercase tracking-wider text-ink-3 bg-canvas border-b border-hair">
                 <th className="px-5 py-3 font-medium">Evaluator</th>
                 <th className="px-3 py-3 font-medium text-center">Clarity</th>
                 <th className="px-3 py-3 font-medium text-center">Organization</th>
@@ -133,7 +133,7 @@ export function AdminEventResults() {
                   <td className="px-3 py-3.5 text-center">{e.organization}</td>
                   <td className="px-3 py-3.5 text-center">{e.delivery}</td>
                   <td className="px-3 py-3.5 text-center font-semibold">{e.overall}</td>
-                  <td className="px-5 py-3.5 max-w-xs text-ink-2">{e.comments || "-"}</td>
+                  <td className="px-5 py-3.5 min-w-[14rem] max-w-sm text-ink-2">{e.comments || "-"}</td>
                   <td className="px-5 py-3.5 text-right text-ink-3 whitespace-nowrap">{formatSubmitted(e.submittedAt)}</td>
                 </tr>
               ))}

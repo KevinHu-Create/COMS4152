@@ -6,9 +6,9 @@ import { AppMark, PresentingIllustration } from "../ui/illustrations";
 import { ChartIcon, CheckIcon, UsersIcon } from "../ui/icons";
 
 const HIGHLIGHTS = [
-  { Icon: CheckIcon, text: "Score every talk on clarity, organization and delivery" },
-  { Icon: UsersIcon, text: "Presenters read honest, anonymous comments" },
-  { Icon: ChartIcon, text: "Instructors see every result at a glance" },
+  { Icon: CheckIcon, title: "Structured scoring", text: "Clarity, organization, delivery and overall, from 1 to 5." },
+  { Icon: UsersIcon, title: "Anonymous for presenters", text: "Honest comments without names attached." },
+  { Icon: ChartIcon, title: "Results at a glance", text: "Instructors see every evaluation and the averages." },
 ];
 
 export function Login() {
@@ -55,87 +55,92 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-[1.1fr_1fr]">
-      {/* Story panel */}
-      <section className="hidden lg:flex flex-col justify-between bg-white px-14 py-12 border-r border-black/5">
+    <div className="min-h-screen grid lg:grid-cols-2 bg-white">
+      {/* Form */}
+      <section className="flex flex-col px-6 sm:px-12 py-8">
         <div className="flex items-center gap-2.5">
           <AppMark className="w-8 h-8" />
-          <span className="font-semibold tracking-tight">Evaluations</span>
+          <span className="font-semibold">Evaluations</span>
         </div>
-        <div className="max-w-lg">
-          <h2 className="text-5xl font-semibold tracking-tight leading-[1.05] text-ink">
-            Feedback that helps every presenter grow.
-          </h2>
-          <p className="mt-4 text-lg text-ink-2">
-            Peer evaluations for classroom presentations, simple enough to fill in before the next talk starts.
-          </p>
-          <PresentingIllustration className="w-full mt-10" />
+
+        <div className="flex-1 flex items-center justify-center py-10">
+          <div className="w-full max-w-sm animate-fade-up">
+            <p className="text-xs font-semibold uppercase tracking-wider text-accent mb-2">COMS4152 · Peer review</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-ink">Presentation Evaluations</h1>
+            <p className="text-ink-2 mt-2 mb-8">
+              {isLogin ? "Sign in to your account" : "Create a new account"}
+            </p>
+
+            {error && <Alert>{error}</Alert>}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {!isLogin && (
+                <Field id="fullName" label="Full Name">
+                  <Input id="fullName" type="text" autoComplete="name" value={fullName}
+                         onChange={(e) => setFullName(e.target.value)} required />
+                </Field>
+              )}
+
+              <Field id="email" label="Email">
+                <Input id="email" type="email" autoComplete="email" placeholder="you@example.com" value={email}
+                       onChange={(e) => setEmail(e.target.value)} required />
+              </Field>
+
+              <Field id="password" label="Password" hint={!isLogin ? "At least 6 characters." : undefined}>
+                <Input id="password" type="password" autoComplete={isLogin ? "current-password" : "new-password"}
+                       value={password} onChange={(e) => setPassword(e.target.value)} required />
+              </Field>
+
+              <Button type="submit" size="lg" disabled={loading} className="w-full mt-2">
+                {loading ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
+              </Button>
+            </form>
+
+            <p className="mt-6 text-center text-sm text-ink-2">
+              <button
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setError("");
+                }}
+                className="font-medium text-accent hover:text-accent-hover"
+                type="button"
+              >
+                {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+              </button>
+            </p>
+          </div>
         </div>
-        <ul className="space-y-3">
-          {HIGHLIGHTS.map(({ Icon, text }) => (
-            <li key={text} className="flex items-center gap-3 text-ink-2">
-              <span className="w-8 h-8 rounded-full bg-accent-soft text-accent flex items-center justify-center">
-                <Icon className="w-4 h-4" />
-              </span>
-              {text}
-            </li>
-          ))}
-        </ul>
+
+        <p className="text-xs text-ink-3">Columbia University · COMS4152 Engineering SaaS</p>
       </section>
 
-      {/* Form */}
-      <section className="flex items-center justify-center px-5 py-12">
-        <div className="w-full max-w-sm animate-fade-up">
-          <div className="lg:hidden flex flex-col items-center mb-6">
-            <PresentingIllustration className="w-64" />
-          </div>
-          <div className="flex justify-center mb-5">
-            <AppMark className="w-12 h-12" />
-          </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-center text-ink">
-            Presentation Evaluations
-          </h1>
-          <p className="text-center text-ink-2 mt-2 mb-8">
-            {isLogin ? "Sign in to your account" : "Create a new account"}
+      {/* Product panel */}
+      <section className="hidden lg:flex relative overflow-hidden flex-col justify-center px-14 py-12 bg-gradient-to-br from-[#4f46e5] via-[#5b4ee6] to-[#7c3aed] text-white">
+        <div aria-hidden="true" className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white/10 blur-2xl" />
+        <div aria-hidden="true" className="absolute -bottom-32 -left-16 w-96 h-96 rounded-full bg-[#a78bfa]/30 blur-3xl" />
+        <div className="relative max-w-lg">
+          <h2 className="text-4xl font-semibold tracking-tight leading-tight">
+            Feedback that helps every presenter grow.
+          </h2>
+          <p className="mt-3 text-white/80 text-lg">
+            Peer evaluations for classroom presentations, simple enough to fill in before the next talk starts.
           </p>
-
-          {error && <Alert>{error}</Alert>}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <Field id="fullName" label="Full Name">
-                <Input id="fullName" type="text" autoComplete="name" value={fullName}
-                       onChange={(e) => setFullName(e.target.value)} required />
-              </Field>
-            )}
-
-            <Field id="email" label="Email">
-              <Input id="email" type="email" autoComplete="email" value={email}
-                     onChange={(e) => setEmail(e.target.value)} required />
-            </Field>
-
-            <Field id="password" label="Password" hint={!isLogin ? "At least 6 characters." : undefined}>
-              <Input id="password" type="password" autoComplete={isLogin ? "current-password" : "new-password"}
-                     value={password} onChange={(e) => setPassword(e.target.value)} required />
-            </Field>
-
-            <Button type="submit" size="lg" disabled={loading} className="w-full mt-2">
-              {loading ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setError("");
-              }}
-              className="text-accent hover:underline text-sm"
-              type="button"
-            >
-              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-            </button>
+          <div className="mt-10 rounded-2xl bg-white p-6 shadow-2xl shadow-black/20 animate-float">
+            <PresentingIllustration className="w-full" />
           </div>
+          <ul className="mt-10 grid gap-5">
+            {HIGHLIGHTS.map(({ Icon, title, text }) => (
+              <li key={title} className="flex gap-3">
+                <span className="w-9 h-9 shrink-0 rounded-lg bg-white/15 ring-1 ring-white/25 flex items-center justify-center">
+                  <Icon className="w-[18px] h-[18px]" />
+                </span>
+                <span>
+                  <span className="block font-medium">{title}</span>
+                  <span className="block text-sm text-white/75">{text}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
     </div>

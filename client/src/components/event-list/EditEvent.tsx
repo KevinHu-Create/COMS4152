@@ -131,8 +131,8 @@ export function EditEvent() {
     <AppShell width="max-w-3xl">
       <BackLink />
       <div className="mb-8">
-        <p className="text-sm font-medium text-accent mb-1">{title || "Event"}</p>
-        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">Edit Event</h1>
+        <p className="text-xs font-semibold uppercase tracking-wider text-accent mb-2">{title || "Event"}</p>
+        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Edit Event</h1>
         <p className="text-ink-2 mt-2">Update the presentation details below.</p>
       </div>
 
@@ -162,7 +162,7 @@ export function EditEvent() {
           </Field>
           <fieldset>
             <legend className="block text-sm font-medium text-ink mb-1.5">Presenters</legend>
-            <div className="max-h-48 overflow-y-auto rounded-xl border border-line divide-y divide-hair">
+            <div className="max-h-48 overflow-y-auto rounded-lg border border-hair divide-y divide-hair">
               {students.length === 0 ? (
                 <p className="text-ink-3 text-sm p-3">No students available</p>
               ) : (

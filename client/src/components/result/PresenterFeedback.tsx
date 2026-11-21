@@ -61,7 +61,7 @@ export function PresenterFeedback() {
             <Card key={p.id} as="article" className="p-6 sm:p-8">
               <div className="flex flex-wrap items-baseline justify-between gap-2 mb-6">
                 <div>
-                  <h2 className="text-2xl font-semibold tracking-tight">{p.title}</h2>
+                  <h2 className="text-xl font-semibold tracking-tight">{p.title}</h2>
                   <p className="text-ink-2 mt-1">{p.course} · {formatDate(p.date)}</p>
                 </div>
                 <p className="text-sm text-ink-3">
@@ -82,7 +82,7 @@ export function PresenterFeedback() {
               ) : (
                 <ul className="grid gap-3 sm:grid-cols-2">
                   {p.comments.map((comment, index) => (
-                    <li key={index} className="rounded-2xl bg-canvas px-4 py-3.5 flex gap-3">
+                    <li key={index} className="rounded-lg border border-hair bg-canvas px-4 py-3 flex gap-3">
                       <QuoteIcon className="w-5 h-5 text-ink-3 shrink-0 mt-0.5" />
                       <span className="text-ink leading-relaxed">{comment}</span>
                     </li>

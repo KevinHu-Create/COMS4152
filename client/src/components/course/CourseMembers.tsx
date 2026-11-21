@@ -141,7 +141,7 @@ export function CourseMembers() {
                 <option value="ta">TA</option>
               </Select>
             </Field>
-            <Button type="submit" className="h-[46px]">
+            <Button type="submit">
               <PlusIcon className="w-4 h-4" />
               Add Member
             </Button>
@@ -153,7 +153,7 @@ export function CourseMembers() {
       <Card className="overflow-hidden">
         <table className="min-w-full text-sm">
           <thead>
-            <tr className="text-left text-ink-3 border-b border-hair">
+            <tr className="text-left text-xs uppercase tracking-wider text-ink-3 bg-canvas border-b border-hair">
               <th className="px-5 py-3 font-medium">Name</th>
               <th className="px-5 py-3 font-medium hidden sm:table-cell">Email</th>
               <th className="px-5 py-3 font-medium">Role</th>

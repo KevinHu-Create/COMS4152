@@ -52,7 +52,7 @@ export function NewCourse() {
           <div className="bg-canvas/60 px-6 sm:px-10 pt-8 pb-6 flex flex-col sm:flex-row items-center gap-6 border-b border-hair">
             <CoursesIllustration className="w-36 shrink-0" />
             <div className="text-center sm:text-left">
-              <h1 className="text-3xl font-semibold tracking-tight">Create a Course</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">Create a Course</h1>
               <p className="text-ink-2 mt-1">You will be its instructor. Add students and TAs next.</p>
             </div>
           </div>

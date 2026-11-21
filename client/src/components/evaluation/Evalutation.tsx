@@ -31,7 +31,7 @@ function ScorePicker({ name, label, hint, value, onChange }: {
           <p className="text-sm text-ink-3 mt-0.5">{hint}</p>
         </div>
         <div className="flex flex-col items-stretch sm:items-end gap-1.5">
-          <div className="grid grid-cols-5 gap-1 rounded-full bg-[#ececf0] p-1 w-full sm:w-auto">
+          <div className="grid grid-cols-5 gap-1 rounded-lg bg-canvas border border-hair p-1 w-full sm:w-auto">
             {[1, 2, 3, 4, 5].map((n) => {
               const id = `${name}-${n}`;
               const checked = value === String(n);
@@ -41,9 +41,9 @@ function ScorePicker({ name, label, hint, value, onChange }: {
                          onChange={() => onChange(String(n))} className="peer sr-only" />
                   <label htmlFor={id} title={SCORE_WORDS[n - 1]}
                          className={cx(
-                           "flex items-center justify-center h-9 sm:w-11 rounded-full text-sm font-medium cursor-pointer select-none transition-all",
+                           "flex items-center justify-center h-9 sm:w-11 rounded-md text-sm font-medium cursor-pointer select-none transition-all",
                            "peer-focus-visible:ring-4 peer-focus-visible:ring-accent/25",
-                           checked ? "bg-accent text-white shadow-sm" : "text-ink-2 hover:text-ink hover:bg-white/70",
+                           checked ? "bg-accent text-white shadow-sm animate-pop" : "text-ink-2 hover:text-ink hover:bg-white",
                          )}>
                     {n}
                   </label>
@@ -179,9 +179,9 @@ export function Evaluation() {
       <BackLink />
 
       <div className="mb-8">
-        <p className="text-sm font-medium text-accent mb-1">Submit Evaluation</p>
-        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">{presentation?.title || "Unknown"}</h1>
-        <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-ink-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-accent mb-2">Submit Evaluation</p>
+        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">{presentation?.title || "Unknown"}</h1>
+        <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-ink-2">
           <li className="flex items-center gap-1.5">
             <PersonIcon className="w-4 h-4 text-ink-3" />
             {presentation?.presenter ? `Presented by ${presentation.presenter}` : "Presenter to be announced"}

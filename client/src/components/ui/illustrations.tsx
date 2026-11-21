@@ -1,13 +1,15 @@
+import { useId } from "react";
+
 // Flat illustrations in the unDraw style: simple shapes, a single accent
 // colour and neutral greys. Drawn for this app so they share its palette.
 
-const INK = "#3f3d56";
+const INK = "#334155";
 const HAIR = "#2f2e41";
 const SKIN = "#f9b9a7";
-const LIGHT = "#e6e6ec";
+const LIGHT = "#e2e8f0";
 const PAPER = "#ffffff";
-const ACCENT = "#0071e3";
-const ACCENT_LIGHT = "#cfe3fb";
+const ACCENT = "#4f46e5";
+const ACCENT_LIGHT = "#e0e7ff";
 const GOLD = "#ffc83d";
 
 type Props = { className?: string };
@@ -81,7 +83,7 @@ export function PresentingIllustration({ className }: Props) {
       <g>
         <path d="M176 334 q0 -42 32 -42 q32 0 32 42z" fill={INK} />
         <circle cx="208" cy="272" r="17" fill={HAIR} />
-        <path d="M232 334 q0 -36 28 -36 q28 0 28 36z" fill="#6c63ff" opacity="0.85" />
+        <path d="M232 334 q0 -36 28 -36 q28 0 28 36z" fill="#a78bfa" opacity="0.85" />
         <circle cx="260" cy="282" r="15" fill={HAIR} />
       </g>
     </Svg>
@@ -148,7 +150,7 @@ export function CoursesIllustration({ className }: Props) {
       <rect x="96" y="170" width="120" height="4" rx="2" fill={ACCENT_LIGHT} />
       <rect x="98" y="134" width="132" height="30" rx="6" fill={INK} />
       <rect x="108" y="140" width="96" height="4" rx="2" fill="#6b6987" />
-      <rect x="92" y="104" width="140" height="30" rx="6" fill="#6c63ff" opacity="0.85" />
+      <rect x="92" y="104" width="140" height="30" rx="6" fill="#a78bfa" opacity="0.85" />
       <rect x="102" y="110" width="110" height="4" rx="2" fill="#d6d3ff" />
       <path d="M160 46 l78 28 l-78 28 l-78 -28z" fill={HAIR} />
       <path d="M126 86 v20 q34 18 68 0 v-20 l-34 12z" fill={INK} />
@@ -190,9 +192,9 @@ export function SentIllustration({ className }: Props) {
       <path d="M40 170 q60 -10 90 -50 q20 -28 60 -36" stroke={LIGHT} strokeWidth="3" strokeDasharray="2 10"
             strokeLinecap="round" fill="none" />
       <path d="M180 64 l100 -30 l-40 110 l-26 -42z" fill={ACCENT} />
-      <path d="M180 64 l34 38 l66 -68z" fill="#3d9bff" />
-      <path d="M214 102 l-4 40 l22 -28z" fill="#0058b9" />
-      <circle cx="96" cy="156" r="26" fill="#34c759" />
+      <path d="M180 64 l34 38 l66 -68z" fill="#818cf8" />
+      <path d="M214 102 l-4 40 l22 -28z" fill="#3730a3" />
+      <circle cx="96" cy="156" r="26" fill="#10b981" />
       <path d="M84 156 l8 8 l16 -16" stroke={PAPER} strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
       <Star x={268} y={150} size={8} />
       <Star x={64} y={70} size={7} fill={ACCENT_LIGHT} />
@@ -217,15 +219,18 @@ export function LockedIllustration({ className }: Props) {
 
 /** App mark used in the navigation bar. */
 export function AppMark({ className = "w-7 h-7" }: Props) {
+  // Unique per instance: the mark appears in both the sidebar and the phone
+  // top bar, and a gradient defined inside a hidden copy would not render.
+  const gradientId = useId();
   return (
     <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
       <defs>
-        <linearGradient id="app-mark-gradient" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#2997ff" />
-          <stop offset="1" stopColor="#0058b9" />
+        <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#6366f1" />
+          <stop offset="1" stopColor="#3730a3" />
         </linearGradient>
       </defs>
-      <rect width="64" height="64" rx="15" fill="url(#app-mark-gradient)" />
+      <rect width="64" height="64" rx="15" fill={`url(#${gradientId})`} />
       <rect x="15" y="34" width="8" height="16" rx="3" fill="#fff" opacity=".75" />
       <rect x="28" y="24" width="8" height="26" rx="3" fill="#fff" opacity=".9" />
       <rect x="41" y="14" width="8" height="36" rx="3" fill="#fff" />

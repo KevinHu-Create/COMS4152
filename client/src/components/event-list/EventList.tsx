@@ -8,7 +8,7 @@ import {
 import { Alert, AppShell, Badge, Button, Card, EmptyState, Field, Input, LoadingScreen, PageHeader, Select, Textarea } from "../ui/ui";
 import { cx, formatDate } from "../ui/format";
 import { AllDoneIllustration, CoursesIllustration, EmptyCalendarIllustration } from "../ui/illustrations";
-import { ChartIcon, ChevronRightIcon, ClockIcon, PencilIcon, PersonIcon, PinIcon, PlusIcon, UsersIcon } from "../ui/icons";
+import { ChartIcon, CheckIcon, ChevronRightIcon, ClockIcon, PencilIcon, PersonIcon, PinIcon, PlusIcon, UsersIcon } from "../ui/icons";
 
 interface EventItem {
   id: number;
@@ -253,18 +253,23 @@ export function EventList() {
       ) : (
         <>
           {isStudent && (
-            <Card as="section" aria-labelledby="pending-heading" className="mb-10 p-6 sm:p-8">
+            <Card as="section" aria-labelledby="pending-heading" className="mb-10 p-6 sm:p-7 border-l-4 border-l-accent">
               <div className="flex items-center justify-between gap-4 mb-4">
-                <div>
-                  <h2 id="pending-heading" className="text-xl font-semibold tracking-tight">
+                <div className="flex items-start gap-3">
+                 <span className="w-9 h-9 shrink-0 rounded-lg bg-accent-soft text-accent flex items-center justify-center">
+                   <CheckIcon className="w-5 h-5" />
+                 </span>
+                 <div>
+                  <h2 id="pending-heading" className="text-lg font-semibold tracking-tight">
                     Waiting for your evaluation
                   </h2>
                   <p className="text-sm text-ink-2 mt-0.5">Presentations you have seen but not scored yet.</p>
+                 </div>
                 </div>
                 {pending.length > 0 && <Badge tone="orange">{pending.length} to do</Badge>}
               </div>
               {pending.length === 0 ? (
-                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 rounded-2xl bg-canvas p-5">
+                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 rounded-lg border border-hair bg-canvas p-5">
                   <AllDoneIllustration className="w-32 shrink-0" />
                   <p className="text-ink-2 text-center sm:text-left">
                     <span className="block font-semibold text-ink">You're all caught up!</span>
@@ -292,7 +297,7 @@ export function EventList() {
           )}
 
           <div className="flex items-baseline justify-between mb-4">
-            <h2 className="text-xl font-semibold tracking-tight">All events</h2>
+            <h2 className="text-lg font-semibold tracking-tight">All events</h2>
             <p className="text-sm text-ink-3">
               {events.length > 0 && `${events.length} ${events.length === 1 ? "event" : "events"}`}
             </p>
@@ -308,13 +313,13 @@ export function EventList() {
               </EmptyState>
             </Card>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2 stagger">
               {events.map((event) => (
                 <Card
                   key={event.id}
                   as="article"
                   data-testid="event-card"
-                  className="group p-5 cursor-pointer transition-all hover:shadow-lift hover:-translate-y-0.5"
+                  className="group p-5 cursor-pointer transition-all duration-200 hover:shadow-lift hover:-translate-y-0.5 hover:border-accent/30"
                   onClick={() => navigate(`/evaluation/${event.id}`)}
                 >
                   <div className="flex gap-4">
@@ -367,10 +372,10 @@ export function EventList() {
       )}
 
       {showForm && createPortal(
-        <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4"
+        <div className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4"
              role="dialog" aria-modal="true" aria-labelledby="create-event-heading">
-          <div className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-lift max-h-[92vh] overflow-y-auto p-6 sm:p-8 animate-fade-up">
-            <h3 id="create-event-heading" className="text-2xl font-semibold tracking-tight mb-1">Create New Event</h3>
+          <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-lift max-h-[92vh] overflow-y-auto p-6 sm:p-8 animate-pop">
+            <h3 id="create-event-heading" className="text-xl font-semibold tracking-tight mb-1">Create New Event</h3>
             <p className="text-sm text-ink-2 mb-6">Schedule a presentation for {course ? course.course_code : "this course"}.</p>
 
             {formError && <Alert>{formError}</Alert>}
@@ -404,7 +409,7 @@ export function EventList() {
 
               <fieldset>
                 <legend className="block text-sm font-medium text-ink mb-1.5">Select Presenters</legend>
-                <div className="max-h-44 overflow-y-auto rounded-xl border border-line divide-y divide-hair">
+                <div className="max-h-44 overflow-y-auto rounded-lg border border-hair divide-y divide-hair">
                   {members.length === 0 ? (
                     <p className="text-ink-3 text-sm p-3">No students available</p>
                   ) : (
