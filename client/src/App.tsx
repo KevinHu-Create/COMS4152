@@ -5,6 +5,8 @@ import { EditEvent } from './components/event-list/EditEvent'
 import { Evaluation } from './components/evaluation/Evalutation'
 import { PresenterFeedback } from './components/result/PresenterFeedback';
 import { AdminEventResults } from './components/result/AdminResultsView';
+import { NewCourse } from './components/course/NewCourse';
+import { CourseMembers } from './components/course/CourseMembers';
 
 function App() {
   return (
@@ -17,6 +19,8 @@ function App() {
         <Route path='/evaluation/:id' element={<Evaluation />} />
         <Route path='/feedback' element={<PresenterFeedback />} />
         <Route path='/admin/results/:id' element={<AdminEventResults />} />
+        <Route path='/courses/new' element={<NewCourse />} />
+        <Route path='/courses/:id/members' element={<CourseMembers />} />
       </Routes>
     </Router>
   )

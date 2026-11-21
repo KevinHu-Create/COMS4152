@@ -8,6 +8,11 @@ RSpec.describe "Evaluations API", type: :request do
   let(:presentation) { create(:presentation, course: course, presenters: [presenter]) }
   let(:scores) { { clarity_score: 5, organization_score: 4, delivery_score: 4, overall_score: 5, comments: "Nice work" } }
 
+  before do
+    create(:course_membership, course: course, user: student)
+    create(:course_membership, course: course, user: presenter)
+  end
+
   describe "POST /api/v1/presentations/:id/evaluations" do
     it "records a student's evaluation" do
       expect {
@@ -61,6 +66,15 @@ RSpec.describe "Evaluations API", type: :request do
       expect(json["errors"]).to include("Delivery score can't be blank")
     end
 
+    it "refuses students who are not enrolled in the course" do
+      outsider = create(:user)
+      post "/api/v1/presentations/#{presentation.presentation_id}/evaluations",
+           params: scores, headers: auth_headers(outsider)
+      expect(response).to have_http_status(:forbidden)
+      expect(json["error"]).to eq("You are not enrolled in this course")
+      expect(Evaluation.count).to eq(0)
+    end
+
     it "requires login" do
       post "/api/v1/presentations/#{presentation.presentation_id}/evaluations", params: scores
       expect(response).to have_http_status(:unauthorized)
@@ -83,6 +97,19 @@ RSpec.describe "Evaluations API", type: :request do
       expect(json.first["evaluator"]).to eq("id" => student.user_id, "name" => "Alice")
     end
 
+    it "lets a TA of the course see evaluations" do
+      ta = create(:user, :ta)
+      create(:course_membership, course: course, user: ta, role_in_course: "ta")
+      get "/api/v1/presentations/#{presentation.presentation_id}/evaluations", headers: auth_headers(ta)
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "forbids an instructor of a different course" do
+      get "/api/v1/presentations/#{presentation.presentation_id}/evaluations",
+          headers: auth_headers(create(:user, :instructor))
+      expect(response).to have_http_status(:forbidden)
+    end
+
     it "forbids students from listing evaluations" do
       get "/api/v1/presentations/#{presentation.presentation_id}/evaluations", headers: auth_headers(student)
       expect(response).to have_http_status(:forbidden)
@@ -90,8 +117,6 @@ RSpec.describe "Evaluations API", type: :request do
   end
 
   describe "GET /api/v1/pending_evaluations" do
-    before { create(:course_membership, course: course, user: student) }
-
     it "lists past and current presentations in the student's courses that still need an evaluation" do
       today = create(:presentation, course: course, title: "Today", presentation_date: Date.today, presenters: [presenter])
       past = create(:presentation, course: course, title: "Last week", presentation_date: Date.today - 7)

@@ -24,6 +24,39 @@ RSpec.describe Course, type: :model do
     end
   end
 
+  describe "roles" do
+    let(:instructor) { create(:user, :instructor) }
+    let(:course) { create(:course, instructor: instructor) }
+    let(:student) { create(:user).tap { |u| create(:course_membership, course: course, user: u) } }
+    let(:ta) { create(:user, :ta).tap { |u| create(:course_membership, course: course, user: u, role_in_course: "ta") } }
+    let(:outsider) { create(:user) }
+    let(:admin) { create(:user, :admin) }
+
+    it "knows each user's role" do
+      expect(course.role_for(instructor)).to eq("instructor")
+      expect(course.role_for(ta)).to eq("ta")
+      expect(course.role_for(student)).to eq("student")
+      expect(course.role_for(admin)).to eq("admin")
+      expect(course.role_for(outsider)).to be_nil
+      expect(course.role_for(nil)).to be_nil
+    end
+
+    it "treats instructors, TAs and admins as staff" do
+      expect([instructor, ta, admin].map { |u| course.staff?(u) }).to all(be true)
+      expect(course.staff?(student)).to be false
+      expect(course.staff?(outsider)).to be false
+    end
+
+    it "treats everyone enrolled as a member" do
+      expect([instructor, ta, student, admin].map { |u| course.member?(u) }).to all(be true)
+      expect(course.member?(outsider)).to be false
+    end
+
+    it "does not give a global instructor any role in someone else's course" do
+      expect(course.role_for(create(:user, :instructor))).to be_nil
+    end
+  end
+
   describe "members" do
     let(:course) { create(:course) }
 

@@ -1,11 +1,12 @@
 class Api::V1::PresentationsController < ApplicationController
   before_action :set_presentation, only: [:show, :update, :destroy, :feedback, :stats]
-  before_action :require_staff!, only: [:create, :update, :destroy]
+  before_action :set_course_from_params, only: [:index, :create]
+  before_action :require_member!, only: [:index, :show]
+  before_action :require_staff!, only: [:create, :update, :destroy, :stats]
 
   # GET /api/v1/courses/:course_id/presentations
   def index
-    course = Course.find(params[:course_id])
-    presentations = course.presentations.includes(:presenters)
+    presentations = @course.presentations.includes(:presenters).order(:presentation_date, :start_time)
 
     render json: presentations.map { |p| presentation_response(p) }
   end
@@ -17,8 +18,7 @@ class Api::V1::PresentationsController < ApplicationController
 
   # POST /api/v1/courses/:course_id/presentations
   def create
-    course = Course.find(params[:course_id])
-    presentation = course.presentations.build(presentation_params)
+    presentation = @course.presentations.build(presentation_params)
 
     if presentation.save
       if params[:presenter_ids].present?
@@ -68,10 +68,6 @@ class Api::V1::PresentationsController < ApplicationController
 
   # GET /api/v1/presentations/:id/stats
   def stats
-    unless admin_or_instructor?
-      return render json: { error: 'Not authorized' }, status: :forbidden
-    end
-
     evals = @presentation.evaluations.includes(:evaluator)
     render json: {
       presentation: presentation_response(@presentation),
@@ -126,12 +122,22 @@ class Api::V1::PresentationsController < ApplicationController
     evals.average(column)&.to_f&.round(1)
   end
 
-  def require_staff!
-    render json: { error: 'Not authorized' }, status: :forbidden unless admin_or_instructor?
-  end
-
   def set_presentation
     @presentation = Presentation.find(params[:id])
+    @course = @presentation.course
+  end
+
+  def set_course_from_params
+    @course = Course.find(params[:course_id])
+  end
+
+  def require_member!
+    forbidden!('You are not a member of this course') unless @course.member?(current_user)
+  end
+
+  # Only the course's instructor, its TAs and admins manage events.
+  def require_staff!
+    forbidden! unless @course.staff?(current_user)
   end
 
   def presentation_params

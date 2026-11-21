@@ -48,9 +48,67 @@ export async function signup(name: string, email: string, password: string) {
   return res.json();
 }
 
-export async function getCourses() {
+export interface Course {
+  id: number;
+  course_code: string;
+  term: string;
+  section: string | null;
+  title: string;
+  instructor: { id: number; name: string };
+  my_role: 'admin' | 'instructor' | 'ta' | 'student' | null;
+}
+
+export function isCourseStaff(course: Course | null) {
+  return !!course && ['admin', 'instructor', 'ta'].includes(course.my_role ?? '');
+}
+
+export function courseLabel(course: Course) {
+  const section = course.section ? `-${course.section}` : '';
+  return `${course.course_code}${section}: ${course.title} (${course.term})`;
+}
+
+export async function getCourses(): Promise<Course[]> {
   const res = await fetchWithAuth(`${API_BASE}/courses`);
   return res.json();
+}
+
+export async function getCourse(id: number) {
+  const res = await fetchWithAuth(`${API_BASE}/courses/${id}`);
+  return res.json();
+}
+
+export async function createCourse(data: { course_code: string; term: string; section?: string; title: string }) {
+  const res = await fetchWithAuth(`${API_BASE}/courses`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function addCourseMember(courseId: number, email: string, role: string) {
+  const res = await fetchWithAuth(`${API_BASE}/courses/${courseId}/members`, {
+    method: 'POST',
+    body: JSON.stringify({ email, role }),
+  });
+  return res.json();
+}
+
+export async function removeCourseMember(courseId: number, userId: number) {
+  const res = await fetchWithAuth(`${API_BASE}/courses/${courseId}/members/${userId}`, {
+    method: 'DELETE',
+  });
+  if (res.status === 204) return {};
+  return res.json();
+}
+
+// The course the user last picked in the event list.
+export function getCurrentCourseId(): number | null {
+  const id = localStorage.getItem('courseId');
+  return id ? Number(id) : null;
+}
+
+export function setCurrentCourseId(id: number) {
+  localStorage.setItem('courseId', String(id));
 }
 
 export async function getPresentations(courseId: number) {
@@ -118,6 +176,7 @@ export function getUser() {
 export function logout() {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
+  localStorage.removeItem('courseId');
 }
 
 export function isLoggedIn() {

@@ -19,5 +19,6 @@ Feature: Create a presentation event
     When I click "+ Create Event"
     And I select "2026-11-20" as the date
     And I click "Create"
-    Then I should still see the "Create New Event" form
+    Then I should see "Please enter a title and a date."
+    And I should still see the "Create New Event" form
     And no presentation should have been created

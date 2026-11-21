@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getPresentations, createPresentation, getUser, logout, getCourseMembers } from "../../api";
+import {
+  getPresentations, createPresentation, getUser, logout, getCourseMembers, getCourses,
+  getCurrentCourseId, setCurrentCourseId, isCourseStaff, courseLabel, type Course,
+} from "../../api";
 
 interface EventItem {
   id: number;
@@ -17,66 +20,99 @@ interface Member {
 
 export function EventList() {
   const navigate = useNavigate();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [course, setCourse] = useState<Course | null>(null);
   const [events, setEvents] = useState<EventItem[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDate, setNewDate] = useState("");
   const [selectedPresenters, setSelectedPresenters] = useState<number[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
+  const [formError, setFormError] = useState("");
 
   const user = getUser();
-  const isAdmin = user?.role === 'instructor' || user?.role === 'ta' || user?.role === 'admin';
+  const isStaff = isCourseStaff(course);
+  const canCreateCourse = user?.role === "instructor" || user?.role === "admin";
 
   useEffect(() => {
     if (!user) {
       navigate("/login");
       return;
     }
-    loadEvents();
-    loadMembers();
+    loadCourses();
   }, []);
 
-  async function loadMembers() {
+  async function loadCourses() {
     try {
-      const data = await getCourseMembers(1);
+      const data = await getCourses();
+      const list = Array.isArray(data) ? data : [];
+      setCourses(list);
+      const savedId = getCurrentCourseId();
+      await selectCourse(list.find((c) => c.id === savedId) ?? list[0] ?? null);
+    } catch (err) {
+      console.error("Failed to load courses", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function selectCourse(next: Course | null) {
+    setCourse(next);
+    setEvents([]);
+    setMembers([]);
+    setShowForm(false);
+    if (!next) return;
+
+    setCurrentCourseId(next.id);
+    await Promise.all([loadEvents(next.id), loadMembers(next.id)]);
+  }
+
+  async function loadMembers(courseId: number) {
+    try {
+      const data = await getCourseMembers(courseId);
       if (Array.isArray(data)) {
-        setMembers(data.filter((m: Member) => m.role === 'student'));
+        setMembers(data.filter((m: Member) => m.role === "student"));
       }
     } catch (err) {
       console.error("Failed to load members", err);
     }
   }
 
-  async function loadEvents() {
+  async function loadEvents(courseId: number) {
     try {
-      const data = await getPresentations(1);
+      const data = await getPresentations(courseId);
       if (Array.isArray(data)) {
         setEvents(data);
       }
     } catch (err) {
       console.error("Failed to load events", err);
-    } finally {
-      setLoading(false);
     }
   }
 
   async function handleCreateEvent() {
-    if (!newTitle.trim() || !newDate.trim()) return;
+    if (!course) return;
+    if (!newTitle.trim() || !newDate.trim()) {
+      setFormError("Please enter a title and a date.");
+      return;
+    }
 
     try {
-      const result = await createPresentation(1, {
+      const result = await createPresentation(course.id, {
         title: newTitle,
         presentation_date: newDate,
         presenter_ids: selectedPresenters,
       });
 
       if (result.id) {
-        loadEvents();
+        loadEvents(course.id);
         setNewTitle("");
         setNewDate("");
         setSelectedPresenters([]);
+        setFormError("");
         setShowForm(false);
+      } else {
+        setFormError(result.errors?.join(", ") || result.error || "Could not create the event.");
       }
     } catch (err) {
       console.error("Failed to create event", err);
@@ -85,7 +121,7 @@ export function EventList() {
 
   function togglePresenter(id: number) {
     if (selectedPresenters.includes(id)) {
-      setSelectedPresenters(selectedPresenters.filter(p => p !== id));
+      setSelectedPresenters(selectedPresenters.filter((p) => p !== id));
     } else {
       setSelectedPresenters([...selectedPresenters, id]);
     }
@@ -132,58 +168,111 @@ export function EventList() {
           </div>
         </div>
 
-        <p className="text-gray-600 mb-6">
-          Select a presentation to submit an evaluation or view details.
-        </p>
-
-        {isAdmin && (
-          <div className="flex justify-end mb-4">
-            <button
-              onClick={() => setShowForm(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-            >
-              + Create Event
-            </button>
-          </div>
-        )}
-
-        <div className="space-y-4">
-          {events.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No presentations yet.</p>
-          ) : (
-            events.map((event) => (
-              <div
-                key={event.id}
-                className="border p-4 rounded-lg shadow-sm hover:shadow transition cursor-pointer bg-white"
-                onClick={() => navigate(`/evaluation/${event.id}`)}
+        <div className="flex flex-wrap items-end gap-3 mb-6 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+          {courses.length > 0 && (
+            <div className="flex-1 min-w-[16rem]">
+              <label htmlFor="course-select" className="block text-xs font-medium text-gray-600 mb-1">
+                Course
+              </label>
+              <select
+                id="course-select"
+                value={course?.id ?? ""}
+                onChange={(e) => selectCourse(courses.find((c) => c.id === Number(e.target.value)) ?? null)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white"
               >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h2 className="text-xl font-semibold">{event.title}</h2>
-                    <p className="text-gray-600 mt-1">Date: {event.date}</p>
-                    <p className="text-gray-600">Presenter: {event.presenter || "TBD"}</p>
-                  </div>
-                  {isAdmin && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/admin/results/${event.id}`);
-                      }}
-                      className="text-sm text-blue-600 hover:text-blue-700"
-                    >
-                      View Results
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {courseLabel(c)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          {isStaff && course && (
+            <button
+              onClick={() => navigate(`/courses/${course.id}/members`)}
+              className="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 text-sm"
+            >
+              Manage Members
+            </button>
+          )}
+          {canCreateCourse && (
+            <button
+              onClick={() => navigate("/courses/new")}
+              className="px-3 py-2 rounded-lg border border-blue-300 text-blue-700 hover:bg-blue-50 text-sm"
+            >
+              + New Course
+            </button>
           )}
         </div>
+
+        {!course ? (
+          <p className="text-gray-500 text-center py-8">
+            You are not enrolled in any course yet.
+            {canCreateCourse ? " Create a course to get started." : " Ask your instructor to add you."}
+          </p>
+        ) : (
+          <>
+            <p className="text-gray-600 mb-6">
+              Select a presentation to submit an evaluation or view details.
+            </p>
+
+            {isStaff && (
+              <div className="flex justify-end mb-4">
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                >
+                  + Create Event
+                </button>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {events.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">No presentations yet.</p>
+              ) : (
+                events.map((event) => (
+                  <div
+                    key={event.id}
+                    className="border p-4 rounded-lg shadow-sm hover:shadow transition cursor-pointer bg-white"
+                    onClick={() => navigate(`/evaluation/${event.id}`)}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h2 className="text-xl font-semibold">{event.title}</h2>
+                        <p className="text-gray-600 mt-1">Date: {event.date}</p>
+                        <p className="text-gray-600">Presenter: {event.presenter || "TBD"}</p>
+                      </div>
+                      {isStaff && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/admin/results/${event.id}`);
+                          }}
+                          className="text-sm text-blue-600 hover:text-blue-700"
+                        >
+                          View Results
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </>
+        )}
 
         {showForm && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
             <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md">
               <h3 className="text-xl font-bold mb-4">Create New Event</h3>
+
+              {formError && (
+                <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  {formError}
+                </div>
+              )}
 
               <label className="block mb-2 text-sm font-medium">Event Title</label>
               <input
@@ -226,7 +315,7 @@ export function EventList() {
               <div className="flex justify-end space-x-3">
                 <button
                   className="px-4 py-2 rounded-lg bg-gray-300 hover:bg-gray-400"
-                  onClick={() => setShowForm(false)}
+                  onClick={() => { setShowForm(false); setFormError(""); }}
                 >
                   Cancel
                 </button>

@@ -9,6 +9,7 @@ export function Evaluation() {
 
   const [presentation, setPresentation] = useState<{ title: string; presenter: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   const [clarity, setClarity] = useState("");
   const [organization, setOrganization] = useState("");
@@ -29,6 +30,8 @@ export function Evaluation() {
       const data = await getPresentation(presentationId);
       if (data.id) {
         setPresentation({ title: data.title, presenter: data.presenter });
+      } else {
+        setLoadError(data.error || "Presentation not found.");
       }
     } catch (err) {
       console.error("Failed to load presentation", err);
@@ -58,8 +61,8 @@ export function Evaluation() {
         comments: comments || undefined,
       });
 
-      if (result.errors) {
-        setError(result.errors.join(", "));
+      if (result.errors || result.error) {
+        setError(result.errors?.join(", ") || result.error);
       } else {
         setSuccess("Thank you! Your evaluation has been recorded.");
         setClarity("");
@@ -106,6 +109,23 @@ export function Evaluation() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <p className="text-gray-600">Loading...</p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full">
+          <p className="text-red-600 font-semibold mb-4">{loadError}</p>
+          <button
+            type="button"
+            onClick={() => navigate("/events")}
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition text-sm"
+          >
+            Back to Events
+          </button>
+        </div>
       </div>
     );
   }

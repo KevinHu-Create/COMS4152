@@ -3,9 +3,7 @@ class Api::V1::EvaluationsController < ApplicationController
 
   # GET /api/v1/presentations/:presentation_id/evaluations
   def index
-    unless admin_or_instructor?
-      return render json: { error: 'Not authorized' }, status: :forbidden
-    end
+    return forbidden! unless @presentation.course.staff?(current_user)
 
     evaluations = @presentation.evaluations.includes(:evaluator)
 
@@ -14,6 +12,10 @@ class Api::V1::EvaluationsController < ApplicationController
 
   # POST /api/v1/presentations/:presentation_id/evaluations
   def create
+    unless @presentation.course.member?(current_user)
+      return forbidden!('You are not enrolled in this course')
+    end
+
     evaluation = @presentation.evaluations.build(evaluation_params)
     evaluation.evaluator_id = current_user.user_id
 

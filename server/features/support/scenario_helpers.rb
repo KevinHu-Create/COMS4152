@@ -4,7 +4,10 @@ module ScenarioHelpers
   # The frontend currently always works with course 1.
   def course
     @course ||= Course.find_by(course_id: 1) ||
-                create(:course, course_id: 1, title: "Engineering SaaS", instructor: instructor_account)
+                create(:course, course_id: 1, title: "Engineering SaaS", instructor: instructor_account).tap do |c|
+                  # Like the seeds and POST /courses, the instructor is also a member.
+                  create(:course_membership, course: c, user: instructor_account, role_in_course: "instructor")
+                end
   end
 
   def instructor_account
