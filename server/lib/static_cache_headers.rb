@@ -16,6 +16,9 @@ class StaticCacheHeaders
   def call(env)
     status, headers, body = @app.call(env)
     if status.to_i == 200 && env["PATH_INFO"].to_s.start_with?(ASSET_PREFIX)
+      # Replace, never add: two Cache-Control headers would be merged by
+      # the browser and "no-cache" would win.
+      headers.delete("Cache-Control")
       headers["cache-control"] = LONG_CACHE
     end
     [status, headers, body]

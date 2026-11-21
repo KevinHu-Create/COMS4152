@@ -12,6 +12,13 @@ RSpec.describe StaticCacheHeaders do
     expect(headers["cache-control"]).to eq("public, max-age=31536000, immutable")
   end
 
+  it "replaces a Cache-Control header written with different capitalisation" do
+    downstream = ->(_env) { [200, { "Cache-Control" => "no-cache" }, ["body"]] }
+    _status, headers, = described_class.new(downstream).call(Rack::MockRequest.env_for("/assets/app.js"))
+    expect(headers.keys.grep(/\Acache-control\z/i)).to eq(["cache-control"])
+    expect(headers["cache-control"]).to eq("public, max-age=31536000, immutable")
+  end
+
   it "leaves index.html to be revalidated on every visit" do
     _status, headers, = call("/index.html")
     expect(headers["cache-control"]).to eq("no-cache")

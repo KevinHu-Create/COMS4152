@@ -51,7 +51,7 @@ Rails.application.configure do
   # shows up right away; fingerprinted /assets/ files are cached for a year
   # (see lib/static_cache_headers.rb).
   config.public_file_server.enabled = true
-  config.public_file_server.headers = { "Cache-Control" => "no-cache" }
+  config.public_file_server.headers = { "cache-control" => "no-cache" }
   config.middleware.insert_before ActionDispatch::Static, StaticCacheHeaders
 
   # Log to STDOUT by default
