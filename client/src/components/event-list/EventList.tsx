@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  getPresentations, createPresentation, getUser, logout, getCourseMembers, getCourses,
+  getPresentations, createPresentation, getUser, logout, getCourseMembers, getCourses, getPendingEvaluations,
   getCurrentCourseId, setCurrentCourseId, isCourseStaff, courseLabel, type Course,
 } from "../../api";
 
@@ -13,6 +13,26 @@ interface EventItem {
   endTime: string | null;
   location: string | null;
   presenter: string;
+  isMine: boolean;
+  evaluatedByMe: boolean;
+  upcoming: boolean;
+}
+
+interface PendingItem {
+  id: number;
+  title: string;
+  date: string;
+  startTime: string | null;
+  presenters: string[];
+}
+
+function Badge({ children, tone }: { children: string; tone: "blue" | "green" | "gray" }) {
+  const tones = {
+    blue: "bg-blue-50 text-blue-700 border-blue-200",
+    green: "bg-green-50 text-green-700 border-green-200",
+    gray: "bg-gray-100 text-gray-600 border-gray-200",
+  };
+  return <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${tones[tone]}`}>{children}</span>;
 }
 
 function timeRange(event: EventItem) {
@@ -32,6 +52,7 @@ export function EventList() {
   const [course, setCourse] = useState<Course | null>(null);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [pending, setPending] = useState<PendingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -45,6 +66,7 @@ export function EventList() {
 
   const user = getUser();
   const isStaff = isCourseStaff(course);
+  const isStudent = course?.my_role === "student";
   const canCreateCourse = user?.role === "instructor" || user?.role === "admin";
 
   useEffect(() => {
@@ -73,11 +95,21 @@ export function EventList() {
     setCourse(next);
     setEvents([]);
     setMembers([]);
+    setPending([]);
     setShowForm(false);
     if (!next) return;
 
     setCurrentCourseId(next.id);
-    await Promise.all([loadEvents(next.id), loadMembers(next.id)]);
+    await Promise.all([loadEvents(next.id), loadMembers(next.id), loadPending(next.id)]);
+  }
+
+  async function loadPending(courseId: number) {
+    try {
+      const data = await getPendingEvaluations(courseId);
+      if (Array.isArray(data)) setPending(data);
+    } catch (err) {
+      console.error("Failed to load pending evaluations", err);
+    }
   }
 
   async function loadMembers(courseId: number) {
@@ -233,6 +265,36 @@ export function EventList() {
           </p>
         ) : (
           <>
+            {isStudent && (
+              <section className="mb-6 p-4 border border-amber-200 bg-amber-50 rounded-lg" aria-labelledby="pending-heading">
+                <h2 id="pending-heading" className="text-lg font-semibold text-amber-900 mb-2">
+                  Waiting for your evaluation
+                </h2>
+                {pending.length === 0 ? (
+                  <p className="text-sm text-amber-800">You're all caught up! No presentations are waiting for your evaluation.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {pending.map((p) => (
+                      <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 bg-white border border-amber-100 rounded-lg px-3 py-2">
+                        <div>
+                          <p className="font-medium text-gray-900">{p.title}</p>
+                          <p className="text-xs text-gray-600">
+                            {p.date}{p.startTime ? ` ${p.startTime}` : ""} - {p.presenters.join(", ") || "TBD"}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => navigate(`/evaluation/${p.id}`)}
+                          className="px-3 py-1 rounded-lg bg-amber-600 text-white text-sm hover:bg-amber-700"
+                        >
+                          Evaluate
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            )}
+
             <p className="text-gray-600 mb-6">
               Select a presentation to submit an evaluation or view details.
             </p>
@@ -260,7 +322,12 @@ export function EventList() {
                   >
                     <div className="flex justify-between items-start">
                       <div>
-                        <h2 className="text-xl font-semibold">{event.title}</h2>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h2 className="text-xl font-semibold">{event.title}</h2>
+                          {event.isMine && <Badge tone="blue">Your presentation</Badge>}
+                          {event.evaluatedByMe && <Badge tone="green">Evaluated</Badge>}
+                          {event.upcoming && <Badge tone="gray">Upcoming</Badge>}
+                        </div>
                         <p className="text-gray-600 mt-1">
                           Date: {event.date}
                           {timeRange(event) && <span className="ml-3">Time: {timeRange(event)}</span>}

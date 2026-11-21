@@ -50,6 +50,22 @@ RSpec.describe Evaluation, type: :model do
     end
   end
 
+  describe "timing" do
+    it "allows evaluating a presentation held today" do
+      expect(build(:evaluation, presentation: create(:presentation, presentation_date: Date.current))).to be_valid
+    end
+
+    it "allows evaluating a past presentation" do
+      expect(build(:evaluation, presentation: create(:presentation, presentation_date: Date.current - 3))).to be_valid
+    end
+
+    it "does not allow evaluating a presentation that has not happened yet" do
+      evaluation = build(:evaluation, presentation: create(:presentation, presentation_date: Date.current + 1))
+      expect(evaluation).not_to be_valid
+      expect(evaluation.errors[:base]).to include("This presentation has not happened yet")
+    end
+  end
+
   describe "self-evaluation" do
     let(:presenter) { create(:user) }
     let(:presentation) { create(:presentation, presenters: [presenter]) }

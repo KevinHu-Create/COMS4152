@@ -25,7 +25,7 @@ module ScenarioHelpers
     end
   end
 
-  def presentation_titled(title, presenters: [student_named("Bob Lee")], date: Date.new(2026, 11, 20))
+  def presentation_titled(title, presenters: [student_named("Bob Lee")], date: Date.current)
     Presentation.find_by(title: title) ||
       create(:presentation, course: course, title: title, presentation_date: date, presenters: presenters)
   end

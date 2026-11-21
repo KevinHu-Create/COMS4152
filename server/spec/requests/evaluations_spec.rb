@@ -66,6 +66,13 @@ RSpec.describe "Evaluations API", type: :request do
       expect(json["errors"]).to include("Delivery score can't be blank")
     end
 
+    it "refuses an evaluation before the presentation has happened" do
+      future = create(:presentation, course: course, presentation_date: Date.current + 2)
+      post "/api/v1/presentations/#{future.presentation_id}/evaluations", params: scores, headers: auth_headers(student)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(json["errors"]).to include("This presentation has not happened yet")
+    end
+
     it "refuses students who are not enrolled in the course" do
       outsider = create(:user)
       post "/api/v1/presentations/#{presentation.presentation_id}/evaluations",
@@ -117,6 +124,22 @@ RSpec.describe "Evaluations API", type: :request do
   end
 
   describe "GET /api/v1/pending_evaluations" do
+    it "includes the course code and start time" do
+      create(:presentation, course: course, title: "Demo", start_time: "10:00", end_time: nil)
+      get "/api/v1/pending_evaluations", headers: auth_headers(student)
+      expect(json.first).to include("title" => "Demo", "course" => "COMS4152", "startTime" => "10:00")
+    end
+
+    it "can be limited to one course" do
+      other = create(:course, course_code: "COMS4111")
+      create(:course_membership, course: other, user: student)
+      create(:presentation, course: other, title: "Elsewhere")
+      create(:presentation, course: course, title: "Here")
+
+      get "/api/v1/pending_evaluations", params: { course_id: course.course_id }, headers: auth_headers(student)
+      expect(json.map { |p| p["title"] }).to eq(["Here"])
+    end
+
     it "lists past and current presentations in the student's courses that still need an evaluation" do
       today = create(:presentation, course: course, title: "Today", presentation_date: Date.today, presenters: [presenter])
       past = create(:presentation, course: course, title: "Last week", presentation_date: Date.today - 7)

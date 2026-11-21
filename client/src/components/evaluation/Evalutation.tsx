@@ -7,7 +7,13 @@ export function Evaluation() {
   const { id } = useParams<{ id: string }>();
   const presentationId = Number(id);
 
-  const [presentation, setPresentation] = useState<{ title: string; presenter: string } | null>(null);
+  const [presentation, setPresentation] = useState<{
+    title: string;
+    presenter: string;
+    isMine: boolean;
+    evaluatedByMe: boolean;
+    upcoming: boolean;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
@@ -29,7 +35,13 @@ export function Evaluation() {
     try {
       const data = await getPresentation(presentationId);
       if (data.id) {
-        setPresentation({ title: data.title, presenter: data.presenter });
+        setPresentation({
+          title: data.title,
+          presenter: data.presenter,
+          isMine: !!data.isMine,
+          evaluatedByMe: !!data.evaluatedByMe,
+          upcoming: !!data.upcoming,
+        });
       } else {
         setLoadError(data.error || "Presentation not found.");
       }
@@ -105,6 +117,15 @@ export function Evaluation() {
     );
   }
 
+  // Why this user cannot evaluate, if they cannot (checked again by the API).
+  const blockedReason = presentation?.isMine
+    ? "This is your presentation, so you cannot evaluate it."
+    : presentation?.evaluatedByMe
+      ? "You have already evaluated this presentation. Thank you!"
+      : presentation?.upcoming
+        ? "This presentation has not happened yet. You can evaluate it on or after its date."
+        : "";
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -162,63 +183,76 @@ export function Evaluation() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <ScoreSelect
-            label="Clarity of explanation"
-            value={clarity}
-            onChange={setClarity}
-          />
-
-          <ScoreSelect
-            label="Organization of presentation"
-            value={organization}
-            onChange={setOrganization}
-          />
-
-          <ScoreSelect
-            label="Delivery & engagement"
-            value={delivery}
-            onChange={setDelivery}
-          />
-
-          <ScoreSelect
-            label="Overall quality"
-            value={overallScore}
-            onChange={setOverallScore}
-          />
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Comments for the presenter (optional)
-            </label>
-            <textarea
-              value={comments}
-              onChange={(e) => setComments(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[100px]"
-              placeholder="What did they do well? What could be improved?"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              These comments may be shared with the presenter to help them improve.
-            </p>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-2">
+        {blockedReason && !success ? (
+          <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-gray-700">
+            <p>{blockedReason}</p>
             <button
               type="button"
               onClick={() => navigate("/events")}
-              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
+              className="mt-3 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition text-sm"
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition disabled:opacity-50"
-            >
-              {submitting ? "Submitting..." : "Submit Evaluation"}
+              Back to Events
             </button>
           </div>
-        </form>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <ScoreSelect
+              label="Clarity of explanation"
+              value={clarity}
+              onChange={setClarity}
+            />
+
+            <ScoreSelect
+              label="Organization of presentation"
+              value={organization}
+              onChange={setOrganization}
+            />
+
+            <ScoreSelect
+              label="Delivery & engagement"
+              value={delivery}
+              onChange={setDelivery}
+            />
+
+            <ScoreSelect
+              label="Overall quality"
+              value={overallScore}
+              onChange={setOverallScore}
+            />
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Comments for the presenter (optional)
+              </label>
+              <textarea
+                value={comments}
+                onChange={(e) => setComments(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[100px]"
+                placeholder="What did they do well? What could be improved?"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                These comments may be shared with the presenter to help them improve.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => navigate("/events")}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition disabled:opacity-50"
+              >
+                {submitting ? "Submitting..." : "Submit Evaluation"}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
