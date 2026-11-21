@@ -2,7 +2,7 @@ FactoryBot.define do
   factory :user do
     sequence(:name) { |n| "Student #{n}" }
     sequence(:email) { |n| "user#{n}@example.com" }
-    password_hash { "password123" }
+    password { "password123" }
     global_role { "student" }
 
     trait(:instructor) { global_role { "instructor" } }

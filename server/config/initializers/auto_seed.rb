@@ -22,6 +22,9 @@ Rails.application.config.after_initialize do
     Rails.application.load_seed
     puts "Seed data loaded!"
   end
+
+  # Databases created before passwords were hashed still hold plain text.
+  User.hash_plaintext_passwords! if ActiveRecord::Base.connection.table_exists?('users')
 rescue => e
   puts "Auto-seed skipped: #{e.message}"
 end

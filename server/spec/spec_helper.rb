@@ -1,10 +1,8 @@
-# SimpleCov must start before any application code is loaded.
+# SimpleCov must start before any application code is loaded (see .simplecov).
 require "simplecov"
-SimpleCov.start "rails" do
-  enable_coverage :branch
-  add_filter "/spec/"
-  minimum_coverage 80
-end
+SimpleCov.command_name "RSpec"
+SimpleCov.start "rails"
+SimpleCov.minimum_coverage 80
 
 RSpec.configure do |config|
   config.expect_with :rspec do |expectations|

@@ -20,7 +20,7 @@ class Api::V1::EvaluationsController < ApplicationController
     if evaluation.save
       render json: evaluation_response(evaluation), status: :created
     else
-      render json: { errors: evaluation.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: evaluation.errors.full_messages }, status: :unprocessable_content
     end
   end
 

@@ -31,7 +31,7 @@ class Api::V1::CoursesController < ApplicationController
 
       render json: course_response(course), status: :created
     else
-      render json: { errors: course.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: course.errors.full_messages }, status: :unprocessable_content
     end
   end
 
@@ -68,7 +68,7 @@ class Api::V1::CoursesController < ApplicationController
     if membership.save
       render json: { message: 'Member added', user: { id: user.user_id, name: user.name } }, status: :created
     else
-      render json: { errors: membership.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: membership.errors.full_messages }, status: :unprocessable_content
     end
   end
 

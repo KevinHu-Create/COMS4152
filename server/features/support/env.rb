@@ -1,12 +1,7 @@
-# Coverage for the user stories goes to coverage/cucumber/index.html
-# (RSpec writes its own report to coverage/index.html).
+# Coverage is merged with RSpec's into coverage/index.html (see .simplecov).
 require "simplecov"
 SimpleCov.command_name "Cucumber"
-SimpleCov.start "rails" do
-  coverage_dir "coverage/cucumber"
-  add_filter "/spec/"
-  add_filter "/features/"
-end
+SimpleCov.start "rails"
 
 # Cucumber runs the real React frontend in headless Chrome (via Cuprite)
 # against this Rails API, so every scenario exercises the full stack.
