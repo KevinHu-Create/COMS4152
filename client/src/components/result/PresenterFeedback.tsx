@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { getMyPresentations } from "../../api";
+import { AppShell, Card, EmptyState, LoadingScreen, PageHeader, StatTile, formatDate } from "../ui/ui";
+import { FeedbackIllustration } from "../ui/illustrations";
+import { QuoteIcon } from "../ui/icons";
 
 type PresentationFeedback = {
   id: number;
@@ -12,10 +14,10 @@ type PresentationFeedback = {
   avgDelivery: number | null;
   avgOverall: number | null;
   comments: string[];
+  evaluationCount: number;
 };
 
 export function PresenterFeedback() {
-  const navigate = useNavigate();
   const [presentations, setPresentations] = useState<PresentationFeedback[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -36,124 +38,60 @@ export function PresenterFeedback() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Loading...</p>
-      </div>
-    );
-  }
+  if (loading) return <LoadingScreen />;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl p-6">
-        <div className="flex justify-between items-start gap-4 mb-4">
-          <div>
-            <button
-              type="button"
-              onClick={() => navigate("/events")}
-              className="text-xs text-blue-600 hover:text-blue-700 mb-2"
-            >
-              Back to events
-            </button>
-            <h1 className="text-2xl font-bold text-gray-900">
-              My Presentation Feedback
-            </h1>
-            <p className="text-gray-600 mt-1 text-sm">
-              These comments and scores were submitted by your audience. Evaluator
-              names are hidden to keep feedback honest and constructive.
-            </p>
-          </div>
-        </div>
+    <AppShell>
+      <PageHeader
+        eyebrow="My Feedback"
+        title="My Presentation Feedback"
+        subtitle="These scores and comments come from your audience. Names are hidden so feedback stays honest and constructive."
+      />
 
-        {presentations.length === 0 && (
-          <p className="text-gray-500 text-sm">
-            You don't have any feedback yet. Once you present, your feedback will
-            appear here.
-          </p>
-        )}
-
-        <div className="space-y-5 mt-3">
+      {presentations.length === 0 ? (
+        <Card>
+          <EmptyState illustration={<FeedbackIllustration />} title="No feedback yet">
+            <p>You don't have any feedback yet. Once you present, your feedback will appear here.</p>
+          </EmptyState>
+        </Card>
+      ) : (
+        <div className="space-y-6">
           {presentations.map((p) => (
-            <div
-              key={p.id}
-              className="border border-gray-200 rounded-xl p-4 bg-gray-50/60"
-            >
-              <div className="flex flex-wrap justify-between gap-3">
+            <Card key={p.id} as="article" className="p-6 sm:p-8">
+              <div className="flex flex-wrap items-baseline justify-between gap-2 mb-6">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    {p.title}
-                  </h2>
-                  <p className="text-sm text-gray-600">
-                    {p.course} - {p.date}
-                  </p>
+                  <h2 className="text-2xl font-semibold tracking-tight">{p.title}</h2>
+                  <p className="text-ink-2 mt-1">{p.course} · {formatDate(p.date)}</p>
                 </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                  <div className="bg-white rounded-lg px-3 py-2 border border-blue-100">
-                    <p className="text-[11px] font-semibold text-blue-700 uppercase">
-                      Clarity
-                    </p>
-                    <p className="text-base font-bold text-blue-900">
-                      {p.avgClarity?.toFixed(1) ?? "-"}
-                    </p>
-                  </div>
-                  <div className="bg-white rounded-lg px-3 py-2 border border-indigo-100">
-                    <p className="text-[11px] font-semibold text-indigo-700 uppercase">
-                      Organization
-                    </p>
-                    <p className="text-base font-bold text-indigo-900">
-                      {p.avgOrganization?.toFixed(1) ?? "-"}
-                    </p>
-                  </div>
-                  <div className="bg-white rounded-lg px-3 py-2 border border-teal-100">
-                    <p className="text-[11px] font-semibold text-teal-700 uppercase">
-                      Delivery
-                    </p>
-                    <p className="text-base font-bold text-teal-900">
-                      {p.avgDelivery?.toFixed(1) ?? "-"}
-                    </p>
-                  </div>
-                  <div className="bg-white rounded-lg px-3 py-2 border border-amber-100">
-                    <p className="text-[11px] font-semibold text-amber-700 uppercase">
-                      Overall
-                    </p>
-                    <p className="text-base font-bold text-amber-900">
-                      {p.avgOverall?.toFixed(1) ?? "-"}
-                    </p>
-                  </div>
-                </div>
+                <p className="text-sm text-ink-3">
+                  {p.evaluationCount} {p.evaluationCount === 1 ? "evaluation" : "evaluations"}
+                </p>
               </div>
 
-              <div className="mt-4">
-                <h3 className="text-sm font-semibold text-gray-800 mb-2">
-                  Anonymous comments from your audience
-                </h3>
-
-                {p.comments.length === 0 ? (
-                  <p className="text-xs text-gray-500">
-                    No written comments for this presentation yet.
-                  </p>
-                ) : (
-                  <ul className="space-y-2">
-                    {p.comments.map((comment, index) => (
-                      <li
-                        key={index}
-                        className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800"
-                      >
-                        <span className="block text-[11px] text-gray-400 mb-1">
-                          Comment #{index + 1}
-                        </span>
-                        <span>{comment}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <StatTile label="Clarity" value={p.avgClarity} />
+                <StatTile label="Organization" value={p.avgOrganization} accent="#5e5ce6" />
+                <StatTile label="Delivery" value={p.avgDelivery} accent="#30b0c7" />
+                <StatTile label="Overall" value={p.avgOverall} accent="#ff9f0a" />
               </div>
-            </div>
+
+              <h3 className="font-semibold mt-8 mb-3">Anonymous comments from your audience</h3>
+              {p.comments.length === 0 ? (
+                <p className="text-sm text-ink-3">No written comments for this presentation yet.</p>
+              ) : (
+                <ul className="grid gap-3 sm:grid-cols-2">
+                  {p.comments.map((comment, index) => (
+                    <li key={index} className="rounded-2xl bg-canvas px-4 py-3.5 flex gap-3">
+                      <QuoteIcon className="w-5 h-5 text-ink-3 shrink-0 mt-0.5" />
+                      <span className="text-ink leading-relaxed">{comment}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
           ))}
         </div>
-      </div>
-    </div>
+      )}
+    </AppShell>
   );
 }

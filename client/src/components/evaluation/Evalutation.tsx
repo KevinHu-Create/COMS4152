@@ -1,6 +1,61 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getPresentation, submitEvaluation } from "../../api";
+import { Alert, AppShell, BackLink, Button, Card, EmptyState, LoadingScreen, Textarea, cx, formatDate } from "../ui/ui";
+import { AllDoneIllustration, EmptyCalendarIllustration, LockedIllustration, SentIllustration } from "../ui/illustrations";
+import { ClockIcon, PersonIcon, PinIcon } from "../ui/icons";
+
+const SCORE_WORDS = ["Poor", "Fair", "Good", "Very good", "Excellent"];
+
+const CATEGORIES = [
+  { key: "clarity", label: "Clarity of explanation", hint: "Were the ideas easy to follow?" },
+  { key: "organization", label: "Organization of presentation", hint: "Did it have a clear structure and flow?" },
+  { key: "delivery", label: "Delivery & engagement", hint: "Voice, pace, eye contact and energy." },
+  { key: "overall", label: "Overall quality", hint: "Your overall impression of the talk." },
+] as const;
+
+type CategoryKey = (typeof CATEGORIES)[number]["key"];
+
+/** A 1-5 segmented control built from radio buttons (keyboard and screen-reader friendly). */
+function ScorePicker({ name, label, hint, value, onChange }: {
+  name: string; label: string; hint: string; value: string; onChange: (value: string) => void;
+}) {
+  return (
+    <fieldset className="py-5 first:pt-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <legend className="font-medium text-ink">
+            {label} <span className="text-danger" aria-hidden="true">*</span>
+          </legend>
+          <p className="text-sm text-ink-3 mt-0.5">{hint}</p>
+        </div>
+        <div className="flex flex-col items-stretch sm:items-end gap-1.5">
+          <div className="grid grid-cols-5 gap-1 rounded-full bg-[#ececf0] p-1 w-full sm:w-auto">
+            {[1, 2, 3, 4, 5].map((n) => {
+              const id = `${name}-${n}`;
+              const checked = value === String(n);
+              return (
+                <div key={n}>
+                  <input type="radio" id={id} name={name} value={n} checked={checked} required
+                         onChange={() => onChange(String(n))} className="peer sr-only" />
+                  <label htmlFor={id} title={SCORE_WORDS[n - 1]}
+                         className={cx(
+                           "flex items-center justify-center h-9 sm:w-11 rounded-full text-sm font-medium cursor-pointer select-none transition-all",
+                           "peer-focus-visible:ring-4 peer-focus-visible:ring-accent/25",
+                           checked ? "bg-white text-ink shadow-sm" : "text-ink-2 hover:text-ink",
+                         )}>
+                    {n}
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs text-ink-3 h-4 text-right">{value ? SCORE_WORDS[Number(value) - 1] : "1 = Poor · 5 = Excellent"}</p>
+        </div>
+      </div>
+    </fieldset>
+  );
+}
 
 export function Evaluation() {
   const navigate = useNavigate();
@@ -10,6 +65,11 @@ export function Evaluation() {
   const [presentation, setPresentation] = useState<{
     title: string;
     presenter: string;
+    date: string;
+    startTime: string | null;
+    endTime: string | null;
+    location: string | null;
+    description: string | null;
     isMine: boolean;
     evaluatedByMe: boolean;
     upcoming: boolean;
@@ -17,10 +77,7 @@ export function Evaluation() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
-  const [clarity, setClarity] = useState("");
-  const [organization, setOrganization] = useState("");
-  const [delivery, setDelivery] = useState("");
-  const [overallScore, setOverallScore] = useState("");
+  const [scores, setScores] = useState<Record<CategoryKey, string>>({ clarity: "", organization: "", delivery: "", overall: "" });
   const [comments, setComments] = useState("");
 
   const [error, setError] = useState("");
@@ -38,6 +95,11 @@ export function Evaluation() {
         setPresentation({
           title: data.title,
           presenter: data.presenter,
+          date: data.date,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          location: data.location,
+          description: data.description,
           isMine: !!data.isMine,
           evaluatedByMe: !!data.evaluatedByMe,
           upcoming: !!data.upcoming,
@@ -57,7 +119,7 @@ export function Evaluation() {
     setError("");
     setSuccess("");
 
-    if (!clarity || !organization || !delivery || !overallScore) {
+    if (CATEGORIES.some(({ key }) => !scores[key])) {
       setError("Please score all categories before submitting.");
       return;
     }
@@ -66,10 +128,10 @@ export function Evaluation() {
 
     try {
       const result = await submitEvaluation(presentationId, {
-        clarity_score: Number(clarity),
-        organization_score: Number(organization),
-        delivery_score: Number(delivery),
-        overall_score: Number(overallScore),
+        clarity_score: Number(scores.clarity),
+        organization_score: Number(scores.organization),
+        delivery_score: Number(scores.delivery),
+        overall_score: Number(scores.overall),
         comments: comments || undefined,
       });
 
@@ -77,11 +139,6 @@ export function Evaluation() {
         setError(result.errors?.join(", ") || result.error);
       } else {
         setSuccess("Thank you! Your evaluation has been recorded.");
-        setClarity("");
-        setOrganization("");
-        setDelivery("");
-        setOverallScore("");
-        setComments("");
       }
     } catch (err) {
       setError("Failed to submit evaluation. Please try again.");
@@ -90,170 +147,112 @@ export function Evaluation() {
     }
   }
 
-  function ScoreSelect(props: {
-    label: string;
-    value: string;
-    onChange: (value: string) => void;
-  }) {
+  if (loading) return <LoadingScreen />;
+
+  if (loadError) {
     return (
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {props.label} <span className="text-red-500">*</span>
-        </label>
-        <select
-          value={props.value}
-          onChange={(e) => props.onChange(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          required
-        >
-          <option value="">Select a score (1-5)</option>
-          <option value="1">1 - Poor</option>
-          <option value="2">2 - Fair</option>
-          <option value="3">3 - Good</option>
-          <option value="4">4 - Very Good</option>
-          <option value="5">5 - Excellent</option>
-        </select>
-      </div>
+      <AppShell width="max-w-3xl">
+        <BackLink />
+        <Card>
+          <EmptyState illustration={<LockedIllustration />} title={loadError}
+                      action={<Button onClick={() => navigate("/events")}>Back to Events</Button>} />
+        </Card>
+      </AppShell>
     );
   }
 
   // Why this user cannot evaluate, if they cannot (checked again by the API).
-  const blockedReason = presentation?.isMine
-    ? "This is your presentation, so you cannot evaluate it."
+  const blocked = presentation?.isMine
+    ? { text: "This is your presentation, so you cannot evaluate it.", art: <LockedIllustration /> }
     : presentation?.evaluatedByMe
-      ? "You have already evaluated this presentation. Thank you!"
+      ? { text: "You have already evaluated this presentation. Thank you!", art: <AllDoneIllustration /> }
       : presentation?.upcoming
-        ? "This presentation has not happened yet. You can evaluate it on or after its date."
-        : "";
+        ? { text: "This presentation has not happened yet. You can evaluate it on or after its date.", art: <EmptyCalendarIllustration /> }
+        : null;
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Loading...</p>
-      </div>
-    );
-  }
-
-  if (loadError) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full">
-          <p className="text-red-600 font-semibold mb-4">{loadError}</p>
-          <button
-            type="button"
-            onClick={() => navigate("/events")}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition text-sm"
-          >
-            Back to Events
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const time = presentation?.startTime && presentation?.endTime
+    ? `${presentation.startTime} – ${presentation.endTime}` : presentation?.startTime;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6">
-        <div className="mb-4">
-          <p
-            className="text-xs text-blue-600 uppercase tracking-wide mb-1 cursor-pointer"
-            onClick={() => navigate("/events")}
-          >
-            Back to events
-          </p>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Submit Evaluation
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Event: <span className="font-semibold">{presentation?.title || "Unknown"}</span>
-            <br />
-            Presenter: <span className="font-semibold">{presentation?.presenter || "TBD"}</span>
-          </p>
-        </div>
+    <AppShell width="max-w-3xl">
+      <BackLink />
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-            {error}
-          </div>
-        )}
+      <div className="mb-8">
+        <p className="text-sm font-medium text-accent mb-1">Submit Evaluation</p>
+        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">{presentation?.title || "Unknown"}</h1>
+        <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-ink-2">
+          <li className="flex items-center gap-1.5">
+            <PersonIcon className="w-4 h-4 text-ink-3" />
+            {presentation?.presenter ? `Presented by ${presentation.presenter}` : "Presenter to be announced"}
+          </li>
+          {presentation?.date && (
+            <li className="flex items-center gap-1.5">
+              <ClockIcon className="w-4 h-4 text-ink-3" />
+              {formatDate(presentation.date)}{time && ` · ${time}`}
+            </li>
+          )}
+          {presentation?.location && (
+            <li className="flex items-center gap-1.5">
+              <PinIcon className="w-4 h-4 text-ink-3" />
+              {presentation.location}
+            </li>
+          )}
+        </ul>
+        {presentation?.description && <p className="mt-3 text-ink-2 max-w-2xl">{presentation.description}</p>}
+      </div>
 
-        {success && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
-            {success}
-          </div>
-        )}
+      {success ? (
+        <Card>
+          <EmptyState illustration={<SentIllustration />} title={success}
+                      action={<Button onClick={() => navigate("/events")}>Back to Events</Button>}>
+            <p>The presenter will see your scores and comment without your name.</p>
+          </EmptyState>
+        </Card>
+      ) : blocked ? (
+        <Card>
+          <EmptyState illustration={blocked.art}
+                      action={<Button onClick={() => navigate("/events")}>Back to Events</Button>}>
+            <p className="text-ink font-medium">{blocked.text}</p>
+          </EmptyState>
+        </Card>
+      ) : (
+        <Card className="p-6 sm:p-8">
+          {error && <Alert>{error}</Alert>}
 
-        {blockedReason && !success ? (
-          <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-gray-700">
-            <p>{blockedReason}</p>
-            <button
-              type="button"
-              onClick={() => navigate("/events")}
-              className="mt-3 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition text-sm"
-            >
-              Back to Events
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <ScoreSelect
-              label="Clarity of explanation"
-              value={clarity}
-              onChange={setClarity}
-            />
+          <form onSubmit={handleSubmit}>
+            <div className="divide-y divide-hair">
+              {CATEGORIES.map((c) => (
+                <ScorePicker key={c.key} name={c.key} label={c.label} hint={c.hint} value={scores[c.key]}
+                             onChange={(v) => setScores((s) => ({ ...s, [c.key]: v }))} />
+              ))}
+            </div>
 
-            <ScoreSelect
-              label="Organization of presentation"
-              value={organization}
-              onChange={setOrganization}
-            />
-
-            <ScoreSelect
-              label="Delivery & engagement"
-              value={delivery}
-              onChange={setDelivery}
-            />
-
-            <ScoreSelect
-              label="Overall quality"
-              value={overallScore}
-              onChange={setOverallScore}
-            />
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Comments for the presenter (optional)
+            <div className="pt-5 mt-1 border-t border-hair">
+              <label htmlFor="comments" className="block font-medium text-ink mb-1.5">
+                Comments for the presenter <span className="text-ink-3 font-normal">(optional)</span>
               </label>
-              <textarea
+              <Textarea
+                id="comments"
                 value={comments}
                 onChange={(e) => setComments(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[100px]"
                 placeholder="What did they do well? What could be improved?"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                These comments may be shared with the presenter to help them improve.
+              <p className="text-xs text-ink-3 mt-1.5">
+                Shared with the presenter anonymously. Your instructor can see who wrote it.
               </p>
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => navigate("/events")}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
-              >
+            <div className="flex justify-end gap-2 pt-6">
+              <Button variant="secondary" onClick={() => navigate("/events")}>
                 Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition disabled:opacity-50"
-              >
+              </Button>
+              <Button type="submit" disabled={submitting}>
                 {submitting ? "Submitting..." : "Submit Evaluation"}
-              </button>
+              </Button>
             </div>
           </form>
-        )}
-      </div>
-    </div>
+        </Card>
+      )}
+    </AppShell>
   );
 }

@@ -4,6 +4,9 @@ import {
   addCourseMember, courseLabel, getCourse, getCourseMembers, getUser,
   isCourseStaff, removeCourseMember, type Course,
 } from "../../api";
+import { Alert, AppShell, Avatar, BackLink, Badge, Button, Card, EmptyState, Field, Input, LoadingScreen, PageHeader, Select } from "../ui/ui";
+import { LockedIllustration } from "../ui/illustrations";
+import { PlusIcon } from "../ui/icons";
 
 interface Member {
   id: number;
@@ -13,6 +16,7 @@ interface Member {
 }
 
 const ROLE_LABELS: Record<string, string> = { instructor: "Instructor", ta: "TA", student: "Student" };
+const ROLE_TONES: Record<string, "blue" | "orange" | "gray"> = { instructor: "blue", ta: "orange", student: "gray" };
 
 export function CourseMembers() {
   const navigate = useNavigate();
@@ -92,103 +96,94 @@ export function CourseMembers() {
     }
   }
 
-  if (loading) {
+  if (loading) return <LoadingScreen />;
+
+  if (loadError || !course) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Loading...</p>
-      </div>
+      <AppShell width="max-w-3xl">
+        <BackLink />
+        <Card>
+          <EmptyState illustration={<LockedIllustration />} title={loadError || "Course not found."} />
+        </Card>
+      </AppShell>
     );
   }
 
+  const counts = members.reduce<Record<string, number>>((acc, m) => ({ ...acc, [m.role]: (acc[m.role] ?? 0) + 1 }), {});
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-3xl mx-auto bg-white shadow-md rounded-xl p-6">
-        <button
-          type="button"
-          onClick={() => navigate("/events")}
-          className="text-xs text-blue-600 hover:text-blue-700 mb-2"
-        >
-          Back to events
-        </button>
+    <AppShell width="max-w-4xl">
+      <BackLink />
+      <PageHeader
+        eyebrow={courseLabel(course)}
+        title="Course Members"
+        subtitle={`${counts.student ?? 0} students · ${counts.ta ?? 0} TAs · taught by ${course.instructor.name}`}
+      />
 
-        {loadError || !course ? (
-          <p className="text-red-600 font-semibold">{loadError || "Course not found."}</p>
-        ) : (
-          <>
-            <h1 className="text-2xl font-bold text-gray-900">Course Members</h1>
-            <p className="text-gray-600 mb-4">{courseLabel(course)}</p>
+      {error && <Alert>{error}</Alert>}
+      {notice && <Alert tone="success">{notice}</Alert>}
 
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
-            )}
-            {notice && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">{notice}</div>
-            )}
+      {isStaff && (
+        <Card className="p-5 sm:p-6 mb-6">
+          <h2 className="font-semibold mb-4">Add someone to this course</h2>
+          <form onSubmit={handleAdd} className="grid gap-3 sm:grid-cols-[1fr_10rem_auto] sm:items-end">
+            <Field id="member-email" label="Email">
+              <Input id="member-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                     placeholder="student@example.com" />
+            </Field>
+            <Field id="member-role" label="Role">
+              <Select id="member-role" value={role} onChange={(e) => setRole(e.target.value)}>
+                <option value="student">Student</option>
+                <option value="ta">TA</option>
+              </Select>
+            </Field>
+            <Button type="submit" className="h-[46px]">
+              <PlusIcon className="w-4 h-4" />
+              Add Member
+            </Button>
+          </form>
+          <p className="text-xs text-ink-3 mt-3">They need an account first. Ask them to sign up with this email.</p>
+        </Card>
+      )}
 
-            {isStaff && (
-              <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3 mb-6 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                <div className="flex-1 min-w-[14rem]">
-                  <label htmlFor="member-email" className="block text-xs font-medium text-gray-600 mb-1">Email</label>
-                  <input
-                    id="member-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="student@example.com"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="member-role" className="block text-xs font-medium text-gray-600 mb-1">Role</label>
-                  <select
-                    id="member-role"
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    className="border border-gray-300 rounded-lg px-3 py-2 bg-white"
-                  >
-                    <option value="student">Student</option>
-                    <option value="ta">TA</option>
-                  </select>
-                </div>
-                <button type="submit" className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
-                  Add Member
-                </button>
-              </form>
-            )}
-
-            <div className="overflow-x-auto rounded-xl border border-gray-200">
-              <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-2 text-left font-medium text-gray-600">Name</th>
-                    <th className="px-4 py-2 text-left font-medium text-gray-600">Email</th>
-                    <th className="px-4 py-2 text-left font-medium text-gray-600">Role</th>
-                    {isStaff && <th className="px-4 py-2" />}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 bg-white">
-                  {members.map((m) => (
-                    <tr key={m.id}>
-                      <td className="px-4 py-2 font-medium text-gray-800">{m.name}</td>
-                      <td className="px-4 py-2 text-gray-600">{m.email}</td>
-                      <td className="px-4 py-2">{ROLE_LABELS[m.role] ?? m.role}</td>
-                      {isStaff && (
-                        <td className="px-4 py-2 text-right">
-                          {m.role !== "instructor" && m.id !== user?.id && (
-                            <button onClick={() => handleRemove(m)} className="text-red-600 hover:text-red-700 text-sm">
-                              Remove
-                            </button>
-                          )}
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+      <Card className="overflow-hidden">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="text-left text-ink-3 border-b border-hair">
+              <th className="px-5 py-3 font-medium">Name</th>
+              <th className="px-5 py-3 font-medium hidden sm:table-cell">Email</th>
+              <th className="px-5 py-3 font-medium">Role</th>
+              {isStaff && <th className="px-5 py-3"><span className="sr-only">Actions</span></th>}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-hair">
+            {members.map((m) => (
+              <tr key={m.id}>
+                <td className="px-5 py-3">
+                  <span className="flex items-center gap-3">
+                    <Avatar name={m.name} />
+                    <span>
+                      <span className="block font-medium text-ink">{m.name}</span>
+                      <span className="block text-xs text-ink-3 sm:hidden">{m.email}</span>
+                    </span>
+                  </span>
+                </td>
+                <td className="px-5 py-3 text-ink-2 hidden sm:table-cell">{m.email}</td>
+                <td className="px-5 py-3"><Badge tone={ROLE_TONES[m.role] ?? "gray"}>{ROLE_LABELS[m.role] ?? m.role}</Badge></td>
+                {isStaff && (
+                  <td className="px-5 py-3 text-right">
+                    {m.role !== "instructor" && m.id !== user?.id && (
+                      <Button variant="danger-ghost" size="sm" onClick={() => handleRemove(m)}>
+                        Remove
+                      </Button>
+                    )}
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+    </AppShell>
   );
 }

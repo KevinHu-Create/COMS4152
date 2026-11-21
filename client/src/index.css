@@ -1,1 +1,50 @@
 @import "tailwindcss";
+
+/* Apple-inspired design tokens */
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  --color-ink: #1d1d1f;
+  --color-ink-2: #6e6e73;
+  --color-ink-3: #86868b;
+  --color-canvas: #f5f5f7;
+  --color-line: #d2d2d7;
+  --color-hair: #e8e8ed;
+
+  --color-accent: #0071e3;
+  --color-accent-hover: #0077ed;
+  --color-accent-soft: #e8f1fc;
+
+  --color-success: #1d7d33;
+  --color-success-soft: #e8f6ec;
+  --color-warning: #a14a00;
+  --color-warning-soft: #fff3e0;
+  --color-danger: #d70015;
+  --color-danger-soft: #fdecee;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 6px 24px rgb(0 0 0 / 0.05);
+  --shadow-lift: 0 2px 8px rgb(0 0 0 / 0.06), 0 18px 40px rgb(0 0 0 / 0.10);
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  @apply bg-canvas text-ink font-sans;
+  letter-spacing: -0.01em;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.35s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up { animation: none; }
+}

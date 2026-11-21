@@ -1,6 +1,15 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { login, signup, saveAuth } from "../../api";
+import { Alert, Button, Field, Input } from "../ui/ui";
+import { AppMark, PresentingIllustration } from "../ui/illustrations";
+import { ChartIcon, CheckIcon, UsersIcon } from "../ui/icons";
+
+const HIGHLIGHTS = [
+  { Icon: CheckIcon, text: "Score every talk on clarity, organization and delivery" },
+  { Icon: UsersIcon, text: "Presenters read honest, anonymous comments" },
+  { Icon: ChartIcon, text: "Instructors see every result at a glance" },
+];
 
 export function Login() {
   const navigate = useNavigate();
@@ -28,12 +37,7 @@ export function Login() {
     setLoading(true);
 
     try {
-      let result;
-      if (isLogin) {
-        result = await login(email, password);
-      } else {
-        result = await signup(fullName, email, password);
-      }
+      const result = isLogin ? await login(email, password) : await signup(fullName, email, password);
 
       if (result.error || result.errors) {
         setError(result.error || result.errors.join(", "));
@@ -51,103 +55,89 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
-        <div className="flex items-center justify-center mb-8">
-          <div className="bg-blue-600 p-3 rounded-xl" />
+    <div className="min-h-screen grid lg:grid-cols-[1.1fr_1fr]">
+      {/* Story panel */}
+      <section className="hidden lg:flex flex-col justify-between bg-white px-14 py-12 border-r border-black/5">
+        <div className="flex items-center gap-2.5">
+          <AppMark className="w-8 h-8" />
+          <span className="font-semibold tracking-tight">Evaluations</span>
         </div>
-
-        <h1 className="text-3xl font-bold text-center text-gray-900 mb-2">
-          Presentation Evaluations
-        </h1>
-        <p className="text-center text-gray-600 mb-4">
-          {isLogin ? "Sign in to your account" : "Create a new account"}
-        </p>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          {!isLogin && (
-            <div>
-              <label
-                htmlFor="fullName"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Full Name
-              </label>
-              <input
-                id="fullName"
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                required
-              />
-            </div>
-          )}
-
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              required
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => {
-              setIsLogin(!isLogin);
-              setError("");
-            }}
-            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-            type="button"
-          >
-            {isLogin
-              ? "Don't have an account? Sign up"
-              : "Already have an account? Sign in"}
-          </button>
+        <div className="max-w-lg">
+          <h2 className="text-5xl font-semibold tracking-tight leading-[1.05] text-ink">
+            Feedback that helps every presenter grow.
+          </h2>
+          <p className="mt-4 text-lg text-ink-2">
+            Peer evaluations for classroom presentations, simple enough to fill in before the next talk starts.
+          </p>
+          <PresentingIllustration className="w-full mt-10" />
         </div>
-      </div>
+        <ul className="space-y-3">
+          {HIGHLIGHTS.map(({ Icon, text }) => (
+            <li key={text} className="flex items-center gap-3 text-ink-2">
+              <span className="w-8 h-8 rounded-full bg-accent-soft text-accent flex items-center justify-center">
+                <Icon className="w-4 h-4" />
+              </span>
+              {text}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Form */}
+      <section className="flex items-center justify-center px-5 py-12">
+        <div className="w-full max-w-sm animate-fade-up">
+          <div className="lg:hidden flex flex-col items-center mb-6">
+            <PresentingIllustration className="w-64" />
+          </div>
+          <div className="flex justify-center mb-5">
+            <AppMark className="w-12 h-12" />
+          </div>
+          <h1 className="text-3xl font-semibold tracking-tight text-center text-ink">
+            Presentation Evaluations
+          </h1>
+          <p className="text-center text-ink-2 mt-2 mb-8">
+            {isLogin ? "Sign in to your account" : "Create a new account"}
+          </p>
+
+          {error && <Alert>{error}</Alert>}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {!isLogin && (
+              <Field id="fullName" label="Full Name">
+                <Input id="fullName" type="text" autoComplete="name" value={fullName}
+                       onChange={(e) => setFullName(e.target.value)} required />
+              </Field>
+            )}
+
+            <Field id="email" label="Email">
+              <Input id="email" type="email" autoComplete="email" value={email}
+                     onChange={(e) => setEmail(e.target.value)} required />
+            </Field>
+
+            <Field id="password" label="Password" hint={!isLogin ? "At least 6 characters." : undefined}>
+              <Input id="password" type="password" autoComplete={isLogin ? "current-password" : "new-password"}
+                     value={password} onChange={(e) => setPassword(e.target.value)} required />
+            </Field>
+
+            <Button type="submit" size="lg" disabled={loading} className="w-full mt-2">
+              {loading ? "Please wait..." : isLogin ? "Sign In" : "Create Account"}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setError("");
+              }}
+              className="text-accent hover:underline text-sm"
+              type="button"
+            >
+              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+            </button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
