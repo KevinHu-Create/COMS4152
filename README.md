@@ -44,7 +44,8 @@ A web application for classroom presentation evaluations for the COMS4152 projec
 - Permissions are per course. Only members see a course and its events. Only the course's instructor, its TAs and admins manage events and members and see named results.
 - Only enrolled students evaluate, once per presentation, never their own, and not before the presentation date.
 - Event end time must be after its start time. Presenters must be members of the course.
-- Swagger API documentation at `/docs`
+
+Swagger API documentation is available at `/docs`.
 
 ## Quick Start
 
