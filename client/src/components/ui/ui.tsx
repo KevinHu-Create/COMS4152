@@ -1,25 +1,23 @@
 import { useLocation, useNavigate, NavLink } from "react-router-dom";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
-import { getUser, logout } from "../../api";
-import { AlertIcon, CalendarIcon, CheckIcon, ChevronLeftIcon, InfoIcon, LogoutIcon, QuoteIcon } from "./icons";
+import { logout } from "../../api";
+import { AlertIcon, CheckIcon, ChevronLeftIcon, InfoIcon, LogoutIcon } from "./icons";
 import { AppMark } from "./illustrations";
 import { cx, initials } from "./format";
+import { Sidebar } from "./Sidebar";
 
 /* ---------- layout ---------- */
 
-const ROLE_NAMES: Record<string, string> = { instructor: "Instructor", ta: "TA", student: "Student", admin: "Admin" };
-
-// "Events" stays highlighted on the pages you reach from an event.
+// Phone top bar links. "Events" stays highlighted on the pages reached from an event.
 const NAV = [
-  { to: "/events", label: "Events", Icon: CalendarIcon, section: ["/events", "/evaluation", "/admin", "/event/", "/courses"] },
-  { to: "/feedback", label: "My Feedback", Icon: QuoteIcon, section: ["/feedback"] },
+  { to: "/events", label: "Events", section: ["/events", "/evaluation", "/admin", "/event/", "/courses"] },
+  { to: "/feedback", label: "My Feedback", section: ["/feedback"] },
 ];
 
 /** App frame: a sidebar on wide screens, a top bar on phones. */
 export function AppShell({ children, width = "max-w-5xl" }: { children: ReactNode; width?: string }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const user = getUser();
 
   function handleLogout() {
     logout();
@@ -27,10 +25,6 @@ export function AppShell({ children, width = "max-w-5xl" }: { children: ReactNod
   }
 
   const inSection = (section: string[]) => section.some((prefix) => pathname.startsWith(prefix));
-
-  const sideLink = (active: boolean) =>
-    cx("flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-       active ? "bg-accent-soft text-accent" : "text-ink-2 hover:bg-canvas hover:text-ink");
 
   const topLink = (active: boolean) =>
     cx("px-3 py-1.5 rounded-lg text-sm font-medium", active ? "bg-accent-soft text-accent" : "text-ink-2");
@@ -49,34 +43,7 @@ export function AppShell({ children, width = "max-w-5xl" }: { children: ReactNod
   return (
     <div className="min-h-screen md:pl-64">
       {/* Sidebar (md and up) */}
-      <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 flex-col bg-white border-r border-hair">
-        <div className="h-16 flex items-center px-5 border-b border-hair">{brand}</div>
-        <nav className="flex-1 px-3 py-4 space-y-1" aria-label="Main">
-          <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-ink-3">Menu</p>
-          {NAV.map(({ to, label, Icon, section }) => (
-            <NavLink key={to} to={to} className={sideLink(inSection(section))}>
-              <Icon className="w-[18px] h-[18px]" />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-        {user && (
-          <div className="p-3 border-t border-hair">
-            <div className="flex items-center gap-3 px-2 py-2">
-              <Avatar name={user.name} />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-ink truncate">{user.name}</p>
-                <p className="text-xs text-ink-3">{ROLE_NAMES[user.role] ?? user.role}</p>
-              </div>
-            </div>
-            <button type="button" onClick={handleLogout}
-                    className="mt-1 w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-ink-2 hover:text-danger hover:bg-danger-soft">
-              <LogoutIcon className="w-[18px] h-[18px]" />
-              <span>Logout</span>
-            </button>
-          </div>
-        )}
-      </aside>
+      <Sidebar onLogout={handleLogout} />
 
       {/* Top bar (phones) */}
       <header className="md:hidden sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-hair">

@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
   getPresentations, createPresentation, getUser, getCourseMembers, getCourses, getPendingEvaluations,
-  getCurrentCourseId, setCurrentCourseId, isCourseStaff, courseLabel, type Course,
+  getCurrentCourseId, setCurrentCourseId, isCourseStaff, courseLabel, COURSE_CHANGE_EVENT, type Course,
 } from "../../api";
 import { Alert, AppShell, Badge, Button, Card, EmptyState, Field, Input, LoadingScreen, PageHeader, Select, Textarea } from "../ui/ui";
 import { cx, formatDate } from "../ui/format";
@@ -74,6 +74,8 @@ export function EventList() {
   const [selectedPresenters, setSelectedPresenters] = useState<number[]>([]);
   const [formError, setFormError] = useState("");
 
+  const shownCourseId = useRef<number | null>(null);
+
   const user = getUser();
   const isStaff = isCourseStaff(course);
   const isStudent = course?.my_role === "student";
@@ -86,6 +88,19 @@ export function EventList() {
     }
     loadCourses();
   }, []);
+
+  // Switch when a course is picked in the sidebar.
+  useEffect(() => {
+    function onCourseChange(e: Event) {
+      const id = (e as CustomEvent<number>).detail;
+      if (id !== shownCourseId.current) {
+        const next = courses.find((c) => c.id === id);
+        if (next) selectCourse(next);
+      }
+    }
+    window.addEventListener(COURSE_CHANGE_EVENT, onCourseChange);
+    return () => window.removeEventListener(COURSE_CHANGE_EVENT, onCourseChange);
+  }, [courses]);
 
   async function loadCourses() {
     try {
@@ -102,6 +117,7 @@ export function EventList() {
   }
 
   async function selectCourse(next: Course | null) {
+    shownCourseId.current = next?.id ?? null;
     setCourse(next);
     setEvents([]);
     setMembers([]);
