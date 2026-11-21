@@ -19,6 +19,39 @@ RSpec.describe Presentation, type: :model do
     end
   end
 
+  describe "times" do
+    it "accepts a start and end time in HH:MM" do
+      expect(build(:presentation, start_time: "09:05", end_time: "09:20")).to be_valid
+    end
+
+    it "allows the times to be left out" do
+      expect(build(:presentation, start_time: nil, end_time: nil)).to be_valid
+      expect(build(:presentation, start_time: "", end_time: "")).to be_valid
+    end
+
+    it "rejects a time that is not HH:MM" do
+      presentation = build(:presentation, start_time: "9am")
+      expect(presentation).not_to be_valid
+      expect(presentation.errors[:start_time]).to include("must look like 14:30")
+    end
+
+    it "rejects an hour past 23" do
+      expect(build(:presentation, end_time: "24:00")).not_to be_valid
+    end
+
+    it "requires the end time to be after the start time" do
+      presentation = build(:presentation, start_time: "10:00", end_time: "10:00")
+      expect(presentation).not_to be_valid
+      expect(presentation.errors[:end_time]).to include("must be after the start time")
+    end
+
+    it "only compares times that are both valid" do
+      presentation = build(:presentation, start_time: "bad", end_time: "09:00")
+      presentation.valid?
+      expect(presentation.errors[:end_time]).to be_empty
+    end
+  end
+
   describe "#presenter?" do
     let(:presenter) { create(:user) }
     let(:audience) { create(:user) }

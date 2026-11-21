@@ -14,6 +14,30 @@ Feature: Create a presentation event
     Then I should see "Introduction to AI" in the event list
     And Alice should be listed as its presenter
 
+  Scenario: Create an event with a time and a location
+    Given I am signed in as an instructor
+    When I click "+ Create Event"
+    And I enter "Introduction to AI" as the event title
+    And I select "2026-11-20" as the date
+    And I set the "Start Time" field to "10:00"
+    And I set the "End Time" field to "10:15"
+    And I set the "Location" field to "Mudd 833"
+    And I click "Create"
+    Then I should see "Introduction to AI" in the event list
+    And I should see "Time: 10:00 - 10:15"
+    And I should see "Location: Mudd 833"
+
+  Scenario: An event cannot end before it starts
+    Given I am signed in as an instructor
+    When I click "+ Create Event"
+    And I enter "Introduction to AI" as the event title
+    And I select "2026-11-20" as the date
+    And I set the "Start Time" field to "11:00"
+    And I set the "End Time" field to "10:30"
+    And I click "Create"
+    Then I should see "End time must be after the start time"
+    And no presentation should have been created
+
   Scenario: An event needs a title
     Given I am signed in as an instructor
     When I click "+ Create Event"
