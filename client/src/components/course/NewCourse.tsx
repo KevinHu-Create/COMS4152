@@ -33,7 +33,7 @@ export function NewCourse() {
       } else {
         setError(result.errors?.join(", ") || result.error || "Could not create the course.");
       }
-    } catch (err) {
+    } catch {
       setError("Connection error. Please try again.");
     } finally {
       setSaving(false);

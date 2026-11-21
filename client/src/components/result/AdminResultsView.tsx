@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getPresentationStats } from "../../api";
-import { AppShell, Avatar, BackLink, Button, Card, EmptyState, LoadingScreen, PageHeader, StatTile, formatDate } from "../ui/ui";
+import { AppShell, Avatar, BackLink, Button, Card, EmptyState, LoadingScreen, PageHeader, StatTile } from "../ui/ui";
+import { formatDate } from "../ui/format";
 import { LockedIllustration } from "../ui/illustrations";
 
 type Evaluation = {
@@ -60,7 +61,7 @@ export function AdminEventResults() {
       } else {
         setData(result);
       }
-    } catch (err) {
+    } catch {
       setError("Failed to load data");
     } finally {
       setLoading(false);
@@ -96,12 +97,12 @@ export function AdminEventResults() {
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-10">
         <div className="col-span-2 lg:col-span-1">
-          <StatTile label="Total evaluations" value={stats.totalEvaluations} max={null} />
+          <StatTile elevated label="Total evaluations" value={stats.totalEvaluations} max={null} />
         </div>
-        <StatTile label="Clarity" value={stats.avgClarity} />
-        <StatTile label="Organization" value={stats.avgOrganization} accent="#5e5ce6" />
-        <StatTile label="Delivery" value={stats.avgDelivery} accent="#30b0c7" />
-        <StatTile label="Overall" value={stats.avgOverall} accent="#ff9f0a" />
+        <StatTile elevated label="Clarity" value={stats.avgClarity} />
+        <StatTile elevated label="Organization" value={stats.avgOrganization} accent="#5e5ce6" />
+        <StatTile elevated label="Delivery" value={stats.avgDelivery} accent="#30b0c7" />
+        <StatTile elevated label="Overall" value={stats.avgOverall} accent="#ff9f0a" />
       </div>
 
       <h2 className="text-xl font-semibold tracking-tight mb-4">Individual Evaluations</h2>

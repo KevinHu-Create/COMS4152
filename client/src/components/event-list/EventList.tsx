@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
   getPresentations, createPresentation, getUser, getCourseMembers, getCourses, getPendingEvaluations,
   getCurrentCourseId, setCurrentCourseId, isCourseStaff, courseLabel, type Course,
 } from "../../api";
-import { Alert, AppShell, Badge, Button, Card, EmptyState, Field, Input, LoadingScreen, PageHeader, Select, Textarea, cx, formatDate } from "../ui/ui";
+import { Alert, AppShell, Badge, Button, Card, EmptyState, Field, Input, LoadingScreen, PageHeader, Select, Textarea } from "../ui/ui";
+import { cx, formatDate } from "../ui/format";
 import { AllDoneIllustration, CoursesIllustration, EmptyCalendarIllustration } from "../ui/illustrations";
 import { ChartIcon, ChevronRightIcon, ClockIcon, PencilIcon, PersonIcon, PinIcon, PlusIcon, UsersIcon } from "../ui/icons";
 
@@ -43,7 +45,7 @@ function timeRange(event: { startTime: string | null; endTime?: string | null })
 /** Calendar-style date tile: month on top, day below. */
 function DateTile({ date, muted }: { date: string; muted?: boolean }) {
   return (
-    <div className={cx("w-14 shrink-0 rounded-2xl text-center py-2", muted ? "bg-[#f0f0f3]" : "bg-accent-soft")}>
+    <div className={cx("w-14 shrink-0 self-start rounded-2xl text-center py-2", muted ? "bg-[#f0f0f3]" : "bg-accent-soft")}>
       <p className={cx("text-[11px] font-semibold uppercase tracking-wide", muted ? "text-ink-3" : "text-accent")}>
         {formatDate(date, { weekday: undefined, day: undefined, year: undefined, month: "short" })}
       </p>
@@ -221,7 +223,7 @@ export function EventList() {
         }
       />
 
-      {courses.length > 0 && (
+      {courses.length > 1 && (
         <div className="mb-8 max-w-md">
           <Field id="course-select" label="Course">
             <Select
@@ -341,7 +343,7 @@ export function EventList() {
                         </li>
                       </ul>
                     </div>
-                    <ChevronRightIcon className="w-5 h-5 text-line self-center transition-transform group-hover:translate-x-0.5" />
+                    <ChevronRightIcon className="hidden sm:block w-5 h-5 text-line self-center transition-transform group-hover:translate-x-0.5" />
                   </div>
                   {isStaff && (
                     <div className="flex gap-1 mt-4 pt-3 border-t border-hair -mx-1">
@@ -364,7 +366,7 @@ export function EventList() {
         </>
       )}
 
-      {showForm && (
+      {showForm && createPortal(
         <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4"
              role="dialog" aria-modal="true" aria-labelledby="create-event-heading">
           <div className="bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-lift max-h-[92vh] overflow-y-auto p-6 sm:p-8 animate-fade-up">
@@ -432,7 +434,7 @@ export function EventList() {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </AppShell>
   );
 }

@@ -62,7 +62,7 @@ export function EditEvent() {
       const [course, members] = await Promise.all([getCourse(data.courseId), getCourseMembers(data.courseId)]);
       setCanEdit(isCourseStaff(course));
       if (Array.isArray(members)) setStudents(members.filter((m: Member) => m.role === "student"));
-    } catch (err) {
+    } catch {
       setLoadError("Failed to load the event.");
     } finally {
       setLoading(false);
@@ -96,7 +96,7 @@ export function EditEvent() {
       } else {
         setError(result.errors?.join(", ") || result.error || "Could not save the event.");
       }
-    } catch (err) {
+    } catch {
       setError("Connection error. Please try again.");
     } finally {
       setSaving(false);

@@ -16,6 +16,10 @@ interface Member {
 }
 
 const ROLE_LABELS: Record<string, string> = { instructor: "Instructor", ta: "TA", student: "Student" };
+function plural(n: number, word: string) {
+  return `${n} ${word}${n === 1 ? "" : "s"}`;
+}
+
 const ROLE_TONES: Record<string, "blue" | "orange" | "gray"> = { instructor: "blue", ta: "orange", student: "gray" };
 
 export function CourseMembers() {
@@ -52,7 +56,7 @@ export function CourseMembers() {
       }
       setCourse(data);
       await loadMembers();
-    } catch (err) {
+    } catch {
       setLoadError("Failed to load the course.");
     } finally {
       setLoading(false);
@@ -117,7 +121,7 @@ export function CourseMembers() {
       <PageHeader
         eyebrow={courseLabel(course)}
         title="Course Members"
-        subtitle={`${counts.student ?? 0} students · ${counts.ta ?? 0} TAs · taught by ${course.instructor.name}`}
+        subtitle={`${plural(counts.student ?? 0, "student")} · ${plural(counts.ta ?? 0, "TA")} · taught by ${course.instructor.name}`}
       />
 
       {error && <Alert>{error}</Alert>}

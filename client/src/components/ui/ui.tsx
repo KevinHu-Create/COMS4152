@@ -3,26 +3,7 @@ import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAt
 import { getUser, logout } from "../../api";
 import { AlertIcon, CheckIcon, ChevronLeftIcon, InfoIcon, LogoutIcon } from "./icons";
 import { AppMark } from "./illustrations";
-
-/* ---------- helpers ---------- */
-
-export function cx(...classes: (string | false | null | undefined)[]) {
-  return classes.filter(Boolean).join(" ");
-}
-
-/** "2026-11-20" -> "Fri, Nov 20, 2026" (dates are calendar days, so format in UTC). */
-export function formatDate(value: string | null | undefined, opts: Intl.DateTimeFormatOptions = {}) {
-  if (!value) return "";
-  const date = new Date(`${value}T00:00:00Z`);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("en-US", {
-    weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone: "UTC", ...opts,
-  });
-}
-
-export function initials(name: string | undefined) {
-  return (name ?? "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
-}
+import { cx, initials } from "./format";
 
 /* ---------- layout ---------- */
 
@@ -248,13 +229,15 @@ export function Avatar({ name, size = "md" }: { name?: string; size?: "sm" | "md
 }
 
 /** Score tile: a label <p> followed by a value <p> (tests read the value after the label). */
-export function StatTile({ label, value, max = 5, accent = "#0071e3" }: {
+export function StatTile({ label, value, max = 5, accent = "#0071e3", elevated = false }: {
   label: string; value: number | string | null | undefined; max?: number | null; accent?: string;
+  /** White card with a shadow, for tiles placed directly on the grey page background. */
+  elevated?: boolean;
 }) {
   const numeric = typeof value === "number" ? value : null;
   const shown = numeric !== null && max ? numeric.toFixed(1) : value ?? "-";
   return (
-    <div className="rounded-2xl bg-canvas px-4 py-4">
+    <div className={cx("rounded-2xl px-4 py-4 h-full", elevated ? "bg-white shadow-card" : "bg-canvas")}>
       <p className="text-xs font-medium text-ink-2">{label}</p>
       <p className="mt-1 text-3xl font-semibold tracking-tight text-ink">{shown}</p>
       {max && (

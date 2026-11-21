@@ -1,7 +1,8 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getPresentation, submitEvaluation } from "../../api";
-import { Alert, AppShell, BackLink, Button, Card, EmptyState, LoadingScreen, Textarea, cx, formatDate } from "../ui/ui";
+import { Alert, AppShell, BackLink, Button, Card, EmptyState, LoadingScreen, Textarea } from "../ui/ui";
+import { cx, formatDate } from "../ui/format";
 import { AllDoneIllustration, EmptyCalendarIllustration, LockedIllustration, SentIllustration } from "../ui/illustrations";
 import { ClockIcon, PersonIcon, PinIcon } from "../ui/icons";
 
@@ -42,7 +43,7 @@ function ScorePicker({ name, label, hint, value, onChange }: {
                          className={cx(
                            "flex items-center justify-center h-9 sm:w-11 rounded-full text-sm font-medium cursor-pointer select-none transition-all",
                            "peer-focus-visible:ring-4 peer-focus-visible:ring-accent/25",
-                           checked ? "bg-white text-ink shadow-sm" : "text-ink-2 hover:text-ink",
+                           checked ? "bg-accent text-white shadow-sm" : "text-ink-2 hover:text-ink hover:bg-white/70",
                          )}>
                     {n}
                   </label>
@@ -50,7 +51,7 @@ function ScorePicker({ name, label, hint, value, onChange }: {
               );
             })}
           </div>
-          <p className="text-xs text-ink-3 h-4 text-right">{value ? SCORE_WORDS[Number(value) - 1] : "1 = Poor · 5 = Excellent"}</p>
+          <p className="text-xs text-ink-2 h-4 text-right" aria-live="polite">{value ? SCORE_WORDS[Number(value) - 1] : ""}</p>
         </div>
       </div>
     </fieldset>
@@ -140,7 +141,7 @@ export function Evaluation() {
       } else {
         setSuccess("Thank you! Your evaluation has been recorded.");
       }
-    } catch (err) {
+    } catch {
       setError("Failed to submit evaluation. Please try again.");
     } finally {
       setSubmitting(false);
@@ -218,6 +219,11 @@ export function Evaluation() {
       ) : (
         <Card className="p-6 sm:p-8">
           {error && <Alert>{error}</Alert>}
+
+          <p className="text-sm text-ink-2 mb-6">
+            Rate each part from <span className="font-medium text-ink">1 (Poor)</span> to{" "}
+            <span className="font-medium text-ink">5 (Excellent)</span>.
+          </p>
 
           <form onSubmit={handleSubmit}>
             <div className="divide-y divide-hair">

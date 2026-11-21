@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getMyPresentations } from "../../api";
-import { AppShell, Card, EmptyState, LoadingScreen, PageHeader, StatTile, formatDate } from "../ui/ui";
+import { AppShell, Card, EmptyState, LoadingScreen, PageHeader, StatTile } from "../ui/ui";
+import { formatDate } from "../ui/format";
 import { FeedbackIllustration } from "../ui/illustrations";
 import { QuoteIcon } from "../ui/icons";
 
