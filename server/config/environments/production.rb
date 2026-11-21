@@ -1,4 +1,5 @@
 require "active_support/core_ext/integer/time"
+require_relative "../../lib/static_cache_headers"
 
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
@@ -46,8 +47,12 @@ Rails.application.configure do
   config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }
 
   # Serve the built React app (copied into public/ by the Dockerfile).
+  # index.html and other files are revalidated on every visit so a deploy
+  # shows up right away; fingerprinted /assets/ files are cached for a year
+  # (see lib/static_cache_headers.rb).
   config.public_file_server.enabled = true
-  config.public_file_server.headers = { "Cache-Control" => "public, max-age=31536000, immutable" }
+  config.public_file_server.headers = { "Cache-Control" => "no-cache" }
+  config.middleware.insert_before ActionDispatch::Static, StaticCacheHeaders
 
   # Log to STDOUT by default
   config.logger = ActiveSupport::Logger.new(STDOUT)
