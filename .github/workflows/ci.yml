@@ -18,7 +18,9 @@ concurrency:
 jobs:
   test:
     name: RSpec + Cucumber
-    runs-on: ubuntu-latest
+    # Pinned: newer images only ship the latest Ruby patch release, and the
+    # app (Gemfile, Dockerfile, .ruby-version) is on Ruby 3.3.3.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       RAILS_ENV: test
@@ -79,7 +81,7 @@ jobs:
 
   frontend:
     name: Frontend type-check, lint and build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     defaults:
       run:
