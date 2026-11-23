@@ -72,6 +72,59 @@ RSpec.describe Presentation, type: :model do
     end
   end
 
+  describe "#upcoming?" do
+    it "is true for a future date" do
+      expect(build(:presentation, presentation_date: Date.current + 1)).to be_upcoming
+    end
+
+    it "is false for today and past dates" do
+      expect(build(:presentation, presentation_date: Date.current)).not_to be_upcoming
+      expect(build(:presentation, presentation_date: Date.current - 1)).not_to be_upcoming
+    end
+
+    it "is false without a date" do
+      expect(build(:presentation, presentation_date: nil)).not_to be_upcoming
+    end
+  end
+
+  describe ".pending_for" do
+    let(:student) { create(:user) }
+    let(:course) { create(:course) }
+
+    before { create(:course_membership, course: course, user: student) }
+
+    it "lists held presentations in the student's courses, oldest first" do
+      today = create(:presentation, course: course, presentation_date: Date.current)
+      last_week = create(:presentation, course: course, presentation_date: Date.current - 7)
+      expect(described_class.pending_for(student)).to eq([last_week, today])
+    end
+
+    it "orders presentations on the same day by start time" do
+      late = create(:presentation, course: course, start_time: "11:00", end_time: nil)
+      early = create(:presentation, course: course, start_time: "09:00", end_time: nil)
+      expect(described_class.pending_for(student)).to eq([early, late])
+    end
+
+    it "leaves out evaluated, own, future and other-course presentations" do
+      evaluated = create(:presentation, course: course)
+      create(:evaluation, presentation: evaluated, evaluator: student)
+      create(:presentation, course: course, presenters: [student])
+      create(:presentation, course: course, presentation_date: Date.current + 1)
+      create(:presentation)
+
+      expect(described_class.pending_for(student)).to be_empty
+    end
+
+    it "can be limited to one course" do
+      other_course = create(:course)
+      create(:course_membership, course: other_course, user: student)
+      here = create(:presentation, course: course)
+      create(:presentation, course: other_course)
+
+      expect(described_class.pending_for(student, course_id: course.course_id)).to eq([here])
+    end
+  end
+
   describe "#average_score" do
     let(:presentation) { create(:presentation) }
 

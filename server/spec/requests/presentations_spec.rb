@@ -30,6 +30,23 @@ RSpec.describe "Presentations API", type: :request do
       expect(json.first).to include("title" => "Team Demo", "presenter" => "Kevin")
     end
 
+    it "tells each user how every event relates to them" do
+      presentation
+      evaluated = create(:presentation, course: course, title: "Already Evaluated")
+      create(:evaluation, presentation: evaluated, evaluator: student)
+      create(:presentation, course: course, title: "Next Week", presentation_date: Date.current + 7)
+
+      get "/api/v1/courses/#{course.course_id}/presentations", headers: auth_headers(student)
+      flags = json.to_h { |p| [p["title"], p.slice("isMine", "evaluatedByMe", "upcoming")] }
+
+      expect(flags["Team Demo"]).to eq("isMine" => false, "evaluatedByMe" => false, "upcoming" => false)
+      expect(flags["Already Evaluated"]).to eq("isMine" => false, "evaluatedByMe" => true, "upcoming" => false)
+      expect(flags["Next Week"]).to eq("isMine" => false, "evaluatedByMe" => false, "upcoming" => true)
+
+      get "/api/v1/courses/#{course.course_id}/presentations", headers: auth_headers(presenter)
+      expect(json.find { |p| p["title"] == "Team Demo" }["isMine"]).to be true
+    end
+
     it "hides the course's presentations from users who are not enrolled" do
       get "/api/v1/courses/#{course.course_id}/presentations", headers: auth_headers(outsider)
       expect(response).to have_http_status(:forbidden)

@@ -22,6 +22,21 @@ class Presentation < ApplicationRecord
     presenters.include?(user)
   end
 
+  def upcoming?
+    presentation_date.present? && presentation_date > Date.current
+  end
+
+  # Presentations the user should still evaluate: in one of their courses,
+  # already held (today or earlier), not their own, not yet evaluated.
+  def self.pending_for(user, course_id: nil)
+    scope = where(course_id: user.course_memberships.select(:course_id))
+            .where.not(presentation_id: user.evaluations.select(:presentation_id))
+            .where.not(presentation_id: user.presentation_presenters.select(:presentation_id))
+            .where("presentation_date <= ?", Date.current)
+    scope = scope.where(course_id: course_id) if course_id.present?
+    scope.order(:presentation_date, :start_time)
+  end
+
   private
 
   # Times are stored as "HH:MM" text, so string comparison orders them.

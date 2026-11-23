@@ -22,16 +22,31 @@ Feature: Submit a presentation evaluation
   Scenario: A presenter cannot evaluate their own presentation
     Given I am signed in as a student
     And I am a presenter for "My Project Demo"
-    And I am viewing the evaluation form for "My Project Demo"
-    When I give every category a score of 5
-    And I click "Submit Evaluation"
-    Then I should see "You cannot evaluate your own presentation"
-    And no evaluation should have been saved
+    When I open the evaluation form for "My Project Demo"
+    Then I should see "This is your presentation, so you cannot evaluate it."
+    And there should be no evaluation form
 
   Scenario: A student cannot evaluate the same presentation twice
     Given I am signed in as a student
     And I have already evaluated "Introduction to AI"
+    When I open the evaluation form for "Introduction to AI"
+    Then I should see "You have already evaluated this presentation."
+    And there should be no evaluation form
+
+  Scenario: A presentation cannot be evaluated before it happens
+    Given I am signed in as a student
+    And "Final Demo Day" is scheduled for next week
+    When I open the evaluation form for "Final Demo Day"
+    Then I should see "This presentation has not happened yet."
+    And there should be no evaluation form
+
+  Scenario: Every category needs a score
+    Given I am signed in as a student
     And I am viewing the evaluation form for "Introduction to AI"
-    When I give every category a score of 3
+    When I select the following scores:
+      | Category                     | Score |
+      | Clarity of explanation       | 4     |
+      | Organization of presentation | 5     |
     And I click "Submit Evaluation"
-    Then I should see "Evaluator has already submitted an evaluation"
+    Then I should not see "Thank you! Your evaluation has been recorded."
+    And no evaluation should have been saved

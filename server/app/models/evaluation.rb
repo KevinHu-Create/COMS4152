@@ -9,6 +9,7 @@ class Evaluation < ApplicationRecord
   validates :evaluator_id, uniqueness: { scope: :presentation_id, message: "has already submitted an evaluation" }
 
   validate :cannot_evaluate_own_presentation
+  validate :presentation_has_happened
 
   private
 
@@ -16,5 +17,9 @@ class Evaluation < ApplicationRecord
     if presentation&.presenter?(evaluator)
       errors.add(:base, "You cannot evaluate your own presentation")
     end
+  end
+
+  def presentation_has_happened
+    errors.add(:base, "This presentation has not happened yet") if presentation&.upcoming?
   end
 end

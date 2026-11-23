@@ -167,6 +167,11 @@ export async function submitEvaluation(presentationId: number, data: {
   return res.json();
 }
 
+export async function getPendingEvaluations(courseId: number) {
+  const res = await fetchWithAuth(`${API_BASE}/pending_evaluations?course_id=${courseId}`);
+  return res.json();
+}
+
 export async function getMyPresentations() {
   const res = await fetchWithAuth(`${API_BASE}/my_presentations`);
   return res.json();

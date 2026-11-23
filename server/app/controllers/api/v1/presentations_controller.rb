@@ -117,6 +117,15 @@ class Api::V1::PresentationsController < ApplicationController
     evals.average(column)&.to_f&.round(1)
   end
 
+  # Looked up once per request so listing events does not query per event.
+  def my_presentation_ids
+    @my_presentation_ids ||= current_user.presentation_presenters.pluck(:presentation_id).to_set
+  end
+
+  def my_evaluated_ids
+    @my_evaluated_ids ||= current_user.evaluations.pluck(:presentation_id).to_set
+  end
+
   # Saves the attributes and presenters together, or neither.
   def save_with_presenters(presentation)
     saved = Presentation.transaction do
@@ -178,6 +187,9 @@ class Api::V1::PresentationsController < ApplicationController
       endTime: presentation.end_time,
       location: presentation.location,
       courseId: presentation.course_id,
+      isMine: my_presentation_ids.include?(presentation.presentation_id),
+      evaluatedByMe: my_evaluated_ids.include?(presentation.presentation_id),
+      upcoming: presentation.upcoming?,
       presenter: presentation.presenters.map(&:name).join(', '),
       presenters: presentation.presenters.map { |u| { id: u.user_id, name: u.name } }
     }

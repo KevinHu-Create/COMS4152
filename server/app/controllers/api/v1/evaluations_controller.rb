@@ -27,22 +27,18 @@ class Api::V1::EvaluationsController < ApplicationController
   end
 
   # GET /api/v1/pending_evaluations
+  # Optional course_id limits the list to one course.
   def pending
-    course_ids = current_user.courses.pluck(:course_id)
-    evaluated_ids = current_user.evaluations.pluck(:presentation_id)
-    own_presentation_ids = current_user.presentations.pluck(:presentation_id)
-
-    pending_presentations = Presentation
-      .where(course_id: course_ids)
-      .where.not(presentation_id: evaluated_ids + own_presentation_ids)
-      .where('presentation_date <= ?', Date.today)
-      .includes(:presenters)
+    pending_presentations = Presentation.pending_for(current_user, course_id: params[:course_id])
+                                        .includes(:presenters, :course)
 
     render json: pending_presentations.map { |p|
       {
         id: p.presentation_id,
         title: p.title,
         date: p.presentation_date,
+        startTime: p.start_time,
+        course: p.course.course_code,
         presenters: p.presenters.map(&:name)
       }
     }
