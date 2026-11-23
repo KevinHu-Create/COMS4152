@@ -1,5 +1,7 @@
 # COMS4152 Presentation Evaluation System
 
+[![CI](https://github.com/KevinHu-Create/COMS4152/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/KevinHu-Create/COMS4152/actions/workflows/ci.yml)
+
 A web application for classroom presentation evaluations for the COMS4152 project. Instructors run courses and schedule presentation events, students evaluate their classmates' presentations, and presenters read anonymous feedback.
 
 ## Team Members
@@ -133,7 +135,23 @@ bin/test
 
 `bin/test` runs RSpec and then Cucumber. Both write to `server/coverage/`, and SimpleCov merges them, so **`server/coverage/index.html` shows the combined RSpec + Cucumber coverage** (shared settings are in `server/.simplecov`). You can also run either suite alone with `bundle exec rspec` or `bundle exec cucumber`.
 
-Current results: **206 RSpec examples and 49 Cucumber scenarios (11 features, 316 steps), all passing; combined line coverage 99.6%, branch coverage 98.9%.**
+Current results: **212 RSpec examples and 49 Cucumber scenarios (11 features, 316 steps), all passing; combined line coverage 99.6%, branch coverage 98.9%.**
+
+HTML reports for each suite (written next to the coverage report):
+
+```bash
+bundle exec rspec --format progress --format html --out coverage/reports/rspec.html
+bundle exec cucumber --format progress --format html --out coverage/reports/cucumber.html
+```
+
+### Continuous integration (GitHub Actions)
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push to `main` and on every pull request:
+
+- **RSpec + Cucumber**: installs Ruby 3.3.3 and Node 22, runs both suites (Cucumber in headless Chrome), writes the combined coverage to the run summary, and uploads a **test-reports** artifact with `coverage/index.html`, `coverage/reports/rspec.html` and `coverage/reports/cucumber.html`.
+- **Frontend**: ESLint, TypeScript type-check and the production build.
+
+See the results in the repository's **Actions** tab; open a run and download **test-reports** to view the HTML reports.
 
 ### User stories (Cucumber)
 
@@ -197,6 +215,7 @@ COMS4152/
 │   ├── features/           # Cucumber user stories and step definitions
 │   ├── spec/               # RSpec tests (models/, requests/, factories/)
 │   └── swagger/            # API documentation
+├── .github/workflows/ci.yml # GitHub Actions: tests, coverage and frontend build
 ├── schema.sql              # Database schema
 └── README.md
 ```

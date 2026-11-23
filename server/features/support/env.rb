@@ -17,7 +17,9 @@ Capybara.register_driver(:cuprite) do |app|
     window_size: [1280, 900],
     headless: ENV["HEADLESS"] != "false", # HEADLESS=false to watch the browser
     process_timeout: 30,
-    timeout: 15
+    timeout: 15,
+    # GitHub Actions runners need Chrome's sandbox turned off.
+    browser_options: ENV["CI"] ? { "no-sandbox" => nil, "disable-dev-shm-usage" => nil } : {}
   )
 end
 Capybara.default_driver = :cuprite
