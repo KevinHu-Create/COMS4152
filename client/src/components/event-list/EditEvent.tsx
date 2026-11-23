@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
-  deletePresentation, getCourse, getCourseMembers, getPresentation, getUser,
+  deletePresentation, getCourse, getCourseMembers, getPresentation,
   isCourseStaff, updatePresentation,
 } from "../../api";
 import { Alert, AppShell, BackLink, Button, Card, EmptyState, Field, Input, LoadingScreen, Textarea } from "../ui/ui";
@@ -18,7 +18,6 @@ export function EditEvent() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const presentationId = Number(id);
-  const user = getUser();
 
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -37,37 +36,32 @@ export function EditEvent() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      navigate("/login");
-      return;
+    async function load() {
+      try {
+        const data = await getPresentation(presentationId);
+        if (!data.id) {
+          setLoadError(data.error || "Event not found.");
+          return;
+        }
+        setTitle(data.title ?? "");
+        setDate(data.date ?? "");
+        setStartTime(data.startTime ?? "");
+        setEndTime(data.endTime ?? "");
+        setLocation(data.location ?? "");
+        setDescription(data.description ?? "");
+        setPresenterIds((data.presenters ?? []).map((p: { id: number }) => p.id));
+
+        const [course, members] = await Promise.all([getCourse(data.courseId), getCourseMembers(data.courseId)]);
+        setCanEdit(isCourseStaff(course));
+        if (Array.isArray(members)) setStudents(members.filter((m: Member) => m.role === "student"));
+      } catch {
+        setLoadError("Failed to load the event.");
+      } finally {
+        setLoading(false);
+      }
     }
     load();
   }, [presentationId]);
-
-  async function load() {
-    try {
-      const data = await getPresentation(presentationId);
-      if (!data.id) {
-        setLoadError(data.error || "Event not found.");
-        return;
-      }
-      setTitle(data.title ?? "");
-      setDate(data.date ?? "");
-      setStartTime(data.startTime ?? "");
-      setEndTime(data.endTime ?? "");
-      setLocation(data.location ?? "");
-      setDescription(data.description ?? "");
-      setPresenterIds((data.presenters ?? []).map((p: { id: number }) => p.id));
-
-      const [course, members] = await Promise.all([getCourse(data.courseId), getCourseMembers(data.courseId)]);
-      setCanEdit(isCourseStaff(course));
-      if (Array.isArray(members)) setStudents(members.filter((m: Member) => m.role === "student"));
-    } catch {
-      setLoadError("Failed to load the event.");
-    } finally {
-      setLoading(false);
-    }
-  }
 
   function togglePresenter(memberId: number) {
     setPresenterIds((ids) => (ids.includes(memberId) ? ids.filter((x) => x !== memberId) : [...ids, memberId]));

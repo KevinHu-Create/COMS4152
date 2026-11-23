@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useParams } from "react-router-dom";
 import {
   addCourseMember, courseLabel, getCourse, getCourseMembers, getUser,
   isCourseStaff, removeCourseMember, type Course,
@@ -23,7 +23,6 @@ function plural(n: number, word: string) {
 const ROLE_TONES: Record<string, "blue" | "orange" | "gray"> = { instructor: "blue", ta: "orange", student: "gray" };
 
 export function CourseMembers() {
-  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const courseId = Number(id);
   const user = getUser();
@@ -39,34 +38,29 @@ export function CourseMembers() {
 
   const isStaff = isCourseStaff(course);
 
-  useEffect(() => {
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-    load();
-  }, [courseId]);
-
-  async function load() {
-    try {
-      const data = await getCourse(courseId);
-      if (data.error) {
-        setLoadError(data.error);
-        return;
-      }
-      setCourse(data);
-      await loadMembers();
-    } catch {
-      setLoadError("Failed to load the course.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadMembers() {
+  const loadMembers = useCallback(async () => {
     const data = await getCourseMembers(courseId);
     if (Array.isArray(data)) setMembers(data);
-  }
+  }, [courseId]);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const data = await getCourse(courseId);
+        if (data.error) {
+          setLoadError(data.error);
+          return;
+        }
+        setCourse(data);
+        await loadMembers();
+      } catch {
+        setLoadError("Failed to load the course.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [courseId, loadMembers]);
 
   async function handleAdd(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

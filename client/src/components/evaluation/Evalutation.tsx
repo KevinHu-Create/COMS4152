@@ -86,34 +86,33 @@ export function Evaluation() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    async function loadPresentation() {
+      try {
+        const data = await getPresentation(presentationId);
+        if (data.id) {
+          setPresentation({
+            title: data.title,
+            presenter: data.presenter,
+            date: data.date,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            location: data.location,
+            description: data.description,
+            isMine: !!data.isMine,
+            evaluatedByMe: !!data.evaluatedByMe,
+            upcoming: !!data.upcoming,
+          });
+        } else {
+          setLoadError(data.error || "Presentation not found.");
+        }
+      } catch (err) {
+        console.error("Failed to load presentation", err);
+      } finally {
+        setLoading(false);
+      }
+    }
     loadPresentation();
   }, [presentationId]);
-
-  async function loadPresentation() {
-    try {
-      const data = await getPresentation(presentationId);
-      if (data.id) {
-        setPresentation({
-          title: data.title,
-          presenter: data.presenter,
-          date: data.date,
-          startTime: data.startTime,
-          endTime: data.endTime,
-          location: data.location,
-          description: data.description,
-          isMine: !!data.isMine,
-          evaluatedByMe: !!data.evaluatedByMe,
-          upcoming: !!data.upcoming,
-        });
-      } else {
-        setLoadError(data.error || "Presentation not found.");
-      }
-    } catch (err) {
-      console.error("Failed to load presentation", err);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
