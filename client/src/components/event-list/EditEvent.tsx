@@ -4,6 +4,9 @@ import {
   deletePresentation, getCourse, getCourseMembers, getPresentation, getUser,
   isCourseStaff, updatePresentation,
 } from "../../api";
+import { Alert, AppShell, BackLink, Button, Card, EmptyState, Field, Input, LoadingScreen, Textarea } from "../ui/ui";
+import { LockedIllustration } from "../ui/illustrations";
+import { TrashIcon } from "../ui/icons";
 
 interface Member {
   id: number;
@@ -59,7 +62,7 @@ export function EditEvent() {
       const [course, members] = await Promise.all([getCourse(data.courseId), getCourseMembers(data.courseId)]);
       setCanEdit(isCourseStaff(course));
       if (Array.isArray(members)) setStudents(members.filter((m: Member) => m.role === "student"));
-    } catch (err) {
+    } catch {
       setLoadError("Failed to load the event.");
     } finally {
       setLoading(false);
@@ -93,7 +96,7 @@ export function EditEvent() {
       } else {
         setError(result.errors?.join(", ") || result.error || "Could not save the event.");
       }
-    } catch (err) {
+    } catch {
       setError("Connection error. Please try again.");
     } finally {
       setSaving(false);
@@ -110,107 +113,89 @@ export function EditEvent() {
     }
   }
 
-  const inputClass = "w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent";
+  if (loading) return <LoadingScreen />;
 
-  if (loading) {
+  if (loadError || !canEdit) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Loading...</p>
-      </div>
+      <AppShell width="max-w-3xl">
+        <BackLink />
+        <Card>
+          <EmptyState illustration={<LockedIllustration />}
+                      title={loadError || "Only the course's instructors and TAs can edit events."} />
+        </Card>
+      </AppShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl p-6">
-        <button
-          type="button"
-          onClick={() => navigate("/events")}
-          className="text-xs text-blue-600 hover:text-blue-700 mb-2"
-        >
-          Back to events
-        </button>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Edit Event</h1>
-
-        {loadError ? (
-          <p className="text-red-600 font-semibold">{loadError}</p>
-        ) : !canEdit ? (
-          <p className="text-red-600 font-semibold">Only the course's instructors and TAs can edit events.</p>
-        ) : (
-          <>
-            <p className="text-gray-600 mb-4">Update the presentation details below.</p>
-
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="event-title" className="block text-sm font-medium text-gray-700 mb-1">Event Title</label>
-                <input id="event-title" value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} />
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label htmlFor="event-date" className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                  <input id="event-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} />
-                </div>
-                <div>
-                  <label htmlFor="event-start" className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                  <input id="event-start" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className={inputClass} />
-                </div>
-                <div>
-                  <label htmlFor="event-end" className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                  <input id="event-end" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className={inputClass} />
-                </div>
-              </div>
-              <div>
-                <label htmlFor="event-location" className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                <input id="event-location" value={location} onChange={(e) => setLocation(e.target.value)} className={inputClass} />
-              </div>
-              <div>
-                <label htmlFor="event-description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea id="event-description" value={description} onChange={(e) => setDescription(e.target.value)}
-                          className={`${inputClass} min-h-[90px]`} />
-              </div>
-              <div>
-                <p className="block text-sm font-medium text-gray-700 mb-1">Presenters</p>
-                <div className="max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-2">
-                  {students.length === 0 ? (
-                    <p className="text-gray-500 text-sm">No students available</p>
-                  ) : (
-                    students.map((m) => (
-                      <label key={m.id} className="flex items-center gap-2 p-1 hover:bg-gray-50 rounded cursor-pointer">
-                        <input type="checkbox" checked={presenterIds.includes(m.id)} onChange={() => togglePresenter(m.id)}
-                               className="w-4 h-4" />
-                        <span>{m.name}</span>
-                      </label>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center pt-2">
-                <button type="button" onClick={handleDelete}
-                        className="px-4 py-2 rounded-lg border border-red-300 text-red-700 hover:bg-red-50">
-                  Delete Event
-                </button>
-                <div className="flex gap-3">
-                  <button type="button" onClick={() => navigate("/events")}
-                          className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">
-                    Cancel
-                  </button>
-                  <button type="submit" disabled={saving}
-                          className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">
-                    {saving ? "Saving..." : "Save Changes"}
-                  </button>
-                </div>
-              </div>
-            </form>
-          </>
-        )}
+    <AppShell width="max-w-3xl">
+      <BackLink />
+      <div className="mb-8">
+        <p className="text-xs font-semibold uppercase tracking-wider text-accent mb-2">{title || "Event"}</p>
+        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Edit Event</h1>
+        <p className="text-ink-2 mt-2">Update the presentation details below.</p>
       </div>
-    </div>
+
+      <Card className="p-6 sm:p-8">
+        {error && <Alert>{error}</Alert>}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <Field id="event-title" label="Event Title">
+            <Input id="event-title" value={title} onChange={(e) => setTitle(e.target.value)} />
+          </Field>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Field id="event-date" label="Date">
+              <Input id="event-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </Field>
+            <Field id="event-start" label="Start Time">
+              <Input id="event-start" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+            </Field>
+            <Field id="event-end" label="End Time">
+              <Input id="event-end" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+            </Field>
+          </div>
+          <Field id="event-location" label="Location">
+            <Input id="event-location" value={location} onChange={(e) => setLocation(e.target.value)} />
+          </Field>
+          <Field id="event-description" label="Description">
+            <Textarea id="event-description" value={description} onChange={(e) => setDescription(e.target.value)} />
+          </Field>
+          <fieldset>
+            <legend className="block text-sm font-medium text-ink mb-1.5">Presenters</legend>
+            <div className="max-h-48 overflow-y-auto rounded-lg border border-hair divide-y divide-hair">
+              {students.length === 0 ? (
+                <p className="text-ink-3 text-sm p-3">No students available</p>
+              ) : (
+                students.map((m) => (
+                  <label key={m.id} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-canvas">
+                    <input type="checkbox" checked={presenterIds.includes(m.id)} onChange={() => togglePresenter(m.id)}
+                           className="w-4 h-4 accent-accent" />
+                    <span>{m.name}</span>
+                  </label>
+                ))
+              )}
+            </div>
+          </fieldset>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => navigate("/events")}>Cancel</Button>
+            <Button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
+          </div>
+        </form>
+      </Card>
+
+      <Card className="p-6 sm:p-8 mt-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="font-semibold">Delete this event</h2>
+            <p className="text-sm text-ink-2 mt-0.5">Its evaluations are deleted too. This cannot be undone.</p>
+          </div>
+          <Button variant="danger-ghost" onClick={handleDelete} className="border border-danger/30">
+            <TrashIcon className="w-4 h-4" />
+            Delete Event
+          </Button>
+        </div>
+      </Card>
+    </AppShell>
   );
 }

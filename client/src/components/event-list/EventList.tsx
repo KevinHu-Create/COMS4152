@@ -1,9 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
-  getPresentations, createPresentation, getUser, logout, getCourseMembers, getCourses, getPendingEvaluations,
-  getCurrentCourseId, setCurrentCourseId, isCourseStaff, courseLabel, type Course,
+  getPresentations, createPresentation, getUser, getCourseMembers, getCourses, getPendingEvaluations,
+  getCurrentCourseId, setCurrentCourseId, isCourseStaff, courseLabel, COURSE_CHANGE_EVENT, type Course,
 } from "../../api";
+import { Alert, AppShell, Badge, Button, Card, EmptyState, Field, Input, LoadingScreen, PageHeader, Select, Textarea } from "../ui/ui";
+import { cx, formatDate } from "../ui/format";
+import { AllDoneIllustration, CoursesIllustration, EmptyCalendarIllustration } from "../ui/illustrations";
+import { ChartIcon, CheckIcon, ChevronRightIcon, ClockIcon, PencilIcon, PersonIcon, PinIcon, PlusIcon, UsersIcon } from "../ui/icons";
 
 interface EventItem {
   id: number;
@@ -26,24 +31,29 @@ interface PendingItem {
   presenters: string[];
 }
 
-function Badge({ children, tone }: { children: string; tone: "blue" | "green" | "gray" }) {
-  const tones = {
-    blue: "bg-blue-50 text-blue-700 border-blue-200",
-    green: "bg-green-50 text-green-700 border-green-200",
-    gray: "bg-gray-100 text-gray-600 border-gray-200",
-  };
-  return <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${tones[tone]}`}>{children}</span>;
-}
-
-function timeRange(event: EventItem) {
-  if (event.startTime && event.endTime) return `${event.startTime} - ${event.endTime}`;
-  return event.startTime || "";
-}
-
 interface Member {
   id: number;
   name: string;
   role: string;
+}
+
+function timeRange(event: { startTime: string | null; endTime?: string | null }) {
+  if (event.startTime && event.endTime) return `${event.startTime} – ${event.endTime}`;
+  return event.startTime || "";
+}
+
+/** Calendar-style date tile: month on top, day below. */
+function DateTile({ date, muted }: { date: string; muted?: boolean }) {
+  return (
+    <div className={cx("w-14 shrink-0 self-start rounded-2xl text-center py-2", muted ? "bg-[#f0f0f3]" : "bg-accent-soft")}>
+      <p className={cx("text-[11px] font-semibold uppercase tracking-wide", muted ? "text-ink-3" : "text-accent")}>
+        {formatDate(date, { weekday: undefined, day: undefined, year: undefined, month: "short" })}
+      </p>
+      <p className="text-2xl font-semibold leading-tight text-ink">
+        {formatDate(date, { weekday: undefined, month: undefined, year: undefined, day: "numeric" })}
+      </p>
+    </div>
+  );
 }
 
 export function EventList() {
@@ -64,6 +74,8 @@ export function EventList() {
   const [selectedPresenters, setSelectedPresenters] = useState<number[]>([]);
   const [formError, setFormError] = useState("");
 
+  const shownCourseId = useRef<number | null>(null);
+
   const user = getUser();
   const isStaff = isCourseStaff(course);
   const isStudent = course?.my_role === "student";
@@ -76,6 +88,19 @@ export function EventList() {
     }
     loadCourses();
   }, []);
+
+  // Switch when a course is picked in the sidebar.
+  useEffect(() => {
+    function onCourseChange(e: Event) {
+      const id = (e as CustomEvent<number>).detail;
+      if (id !== shownCourseId.current) {
+        const next = courses.find((c) => c.id === id);
+        if (next) selectCourse(next);
+      }
+    }
+    window.addEventListener(COURSE_CHANGE_EVENT, onCourseChange);
+    return () => window.removeEventListener(COURSE_CHANGE_EVENT, onCourseChange);
+  }, [courses]);
 
   async function loadCourses() {
     try {
@@ -92,6 +117,7 @@ export function EventList() {
   }
 
   async function selectCourse(next: Course | null) {
+    shownCourseId.current = next?.id ?? null;
     setCourse(next);
     setEvents([]);
     setMembers([]);
@@ -134,6 +160,17 @@ export function EventList() {
     }
   }
 
+  function resetForm() {
+    setNewTitle("");
+    setNewDate("");
+    setNewStart("");
+    setNewEnd("");
+    setNewLocation("");
+    setNewDescription("");
+    setSelectedPresenters([]);
+    setFormError("");
+  }
+
   async function handleCreateEvent() {
     if (!course) return;
     if (!newTitle.trim() || !newDate.trim()) {
@@ -154,14 +191,7 @@ export function EventList() {
 
       if (result.id) {
         loadEvents(course.id);
-        setNewTitle("");
-        setNewDate("");
-        setNewStart("");
-        setNewEnd("");
-        setNewLocation("");
-        setNewDescription("");
-        setSelectedPresenters([]);
-        setFormError("");
+        resetForm();
         setShowForm(false);
       } else {
         setFormError(result.errors?.join(", ") || result.error || "Could not create the event.");
@@ -179,295 +209,253 @@ export function EventList() {
     }
   }
 
-  function handleLogout() {
-    logout();
-    navigate("/login");
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Loading...</p>
-      </div>
-    );
-  }
+  if (loading) return <LoadingScreen />;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto bg-white shadow-md rounded-xl p-6">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">
-              Presentation Events
-            </h1>
-            <p className="text-gray-600">
-              Welcome, {user?.name} ({user?.role})
+    <AppShell>
+      <PageHeader
+        eyebrow={course ? courseLabel(course) : undefined}
+        title="Presentation Events"
+        subtitle={<>Welcome, {user?.name} ({user?.role})</>}
+        actions={
+          <>
+            {canCreateCourse && (
+              <Button variant="secondary" size="sm" onClick={() => navigate("/courses/new")}>
+                + New Course
+              </Button>
+            )}
+            {isStaff && course && (
+              <Button variant="secondary" size="sm" onClick={() => navigate(`/courses/${course.id}/members`)}>
+                <UsersIcon className="w-4 h-4" />
+                Manage Members
+              </Button>
+            )}
+            {isStaff && (
+              <Button size="sm" onClick={() => setShowForm(true)}>
+                + Create Event
+              </Button>
+            )}
+          </>
+        }
+      />
+
+      {courses.length > 1 && (
+        <div className="mb-8 max-w-md">
+          <Field id="course-select" label="Course">
+            <Select
+              id="course-select"
+              value={course?.id ?? ""}
+              onChange={(e) => selectCourse(courses.find((c) => c.id === Number(e.target.value)) ?? null)}
+            >
+              {courses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {courseLabel(c)}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </div>
+      )}
+
+      {!course ? (
+        <Card>
+          <EmptyState illustration={<CoursesIllustration />} title="No courses yet">
+            <p>
+              You are not enrolled in any course yet.
+              {canCreateCourse ? " Create a course to get started." : " Ask your instructor to add you."}
+            </p>
+          </EmptyState>
+        </Card>
+      ) : (
+        <>
+          {isStudent && (
+            <Card as="section" aria-labelledby="pending-heading" className="mb-10 p-6 sm:p-7 border-l-4 border-l-accent">
+              <div className="flex items-center justify-between gap-4 mb-4">
+                <div className="flex items-start gap-3">
+                 <span className="w-9 h-9 shrink-0 rounded-lg bg-accent-soft text-accent flex items-center justify-center">
+                   <CheckIcon className="w-5 h-5" />
+                 </span>
+                 <div>
+                  <h2 id="pending-heading" className="text-lg font-semibold tracking-tight">
+                    Waiting for your evaluation
+                  </h2>
+                  <p className="text-sm text-ink-2 mt-0.5">Presentations you have seen but not scored yet.</p>
+                 </div>
+                </div>
+                {pending.length > 0 && <Badge tone="orange">{pending.length} to do</Badge>}
+              </div>
+              {pending.length === 0 ? (
+                <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 rounded-lg border border-hair bg-canvas p-5">
+                  <AllDoneIllustration className="w-32 shrink-0" />
+                  <p className="text-ink-2 text-center sm:text-left">
+                    <span className="block font-semibold text-ink">You're all caught up!</span>
+                    No presentations are waiting for your evaluation.
+                  </p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-hair">
+                  {pending.map((p) => (
+                    <li key={p.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                      <div className="min-w-0">
+                        <p className="font-medium text-ink truncate">{p.title}</p>
+                        <p className="text-sm text-ink-2">
+                          {formatDate(p.date)}{p.startTime ? ` · ${p.startTime}` : ""} · {p.presenters.join(", ") || "Presenter to be announced"}
+                        </p>
+                      </div>
+                      <Button size="sm" onClick={() => navigate(`/evaluation/${p.id}`)}>
+                        Evaluate
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          )}
+
+          <div className="flex items-baseline justify-between mb-4">
+            <h2 className="text-lg font-semibold tracking-tight">All events</h2>
+            <p className="text-sm text-ink-3">
+              {events.length > 0 && `${events.length} ${events.length === 1 ? "event" : "events"}`}
             </p>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => navigate("/feedback")}
-              className="text-blue-600 hover:text-blue-700 text-sm"
-            >
-              My Feedback
-            </button>
-            <button
-              onClick={handleLogout}
-              className="text-red-600 hover:text-red-700 text-sm"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
 
-        <div className="flex flex-wrap items-end gap-3 mb-6 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-          {courses.length > 0 && (
-            <div className="flex-1 min-w-[16rem]">
-              <label htmlFor="course-select" className="block text-xs font-medium text-gray-600 mb-1">
-                Course
-              </label>
-              <select
-                id="course-select"
-                value={course?.id ?? ""}
-                onChange={(e) => selectCourse(courses.find((c) => c.id === Number(e.target.value)) ?? null)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white"
+          {events.length === 0 ? (
+            <Card>
+              <EmptyState
+                illustration={<EmptyCalendarIllustration />}
+                action={isStaff && <Button onClick={() => setShowForm(true)}><PlusIcon className="w-4 h-4" />Create the first event</Button>}
               >
-                {courses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {courseLabel(c)}
-                  </option>
-                ))}
-              </select>
+                <p>No presentations yet.</p>
+              </EmptyState>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 stagger">
+              {events.map((event) => (
+                <Card
+                  key={event.id}
+                  as="article"
+                  data-testid="event-card"
+                  className="group p-5 cursor-pointer transition-all duration-200 hover:shadow-lift hover:-translate-y-0.5 hover:border-accent/30"
+                  onClick={() => navigate(`/evaluation/${event.id}`)}
+                >
+                  <div className="flex gap-4">
+                    <DateTile date={event.date} muted={event.upcoming} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                        {event.isMine && <Badge tone="blue">Your presentation</Badge>}
+                        {event.evaluatedByMe && <Badge tone="green">Evaluated</Badge>}
+                        {event.upcoming && <Badge tone="gray">Upcoming</Badge>}
+                      </div>
+                      <h2 className="text-lg font-semibold tracking-tight leading-snug">{event.title}</h2>
+                      <ul className="mt-2 space-y-1 text-sm text-ink-2">
+                        <li className="flex items-center gap-2">
+                          <ClockIcon className="w-4 h-4 text-ink-3" />
+                          <span>{formatDate(event.date)}{timeRange(event) && ` · ${timeRange(event)}`}</span>
+                        </li>
+                        {event.location && (
+                          <li className="flex items-center gap-2">
+                            <PinIcon className="w-4 h-4 text-ink-3" />
+                            <span>{event.location}</span>
+                          </li>
+                        )}
+                        <li className="flex items-center gap-2">
+                          <PersonIcon className="w-4 h-4 text-ink-3" />
+                          <span>{event.presenter ? `Presented by ${event.presenter}` : "Presenter to be announced"}</span>
+                        </li>
+                      </ul>
+                    </div>
+                    <ChevronRightIcon className="hidden sm:block w-5 h-5 text-line self-center transition-transform group-hover:translate-x-0.5" />
+                  </div>
+                  {isStaff && (
+                    <div className="flex gap-1 mt-4 pt-3 border-t border-hair -mx-1">
+                      <Button variant="ghost" size="sm"
+                              onClick={(e) => { e.stopPropagation(); navigate(`/admin/results/${event.id}`); }}>
+                        <ChartIcon className="w-4 h-4" />
+                        View Results
+                      </Button>
+                      <Button variant="ghost" size="sm"
+                              onClick={(e) => { e.stopPropagation(); navigate(`/event/edit/${event.id}`); }}>
+                        <PencilIcon className="w-4 h-4" />
+                        Edit
+                      </Button>
+                    </div>
+                  )}
+                </Card>
+              ))}
             </div>
           )}
-          {isStaff && course && (
-            <button
-              onClick={() => navigate(`/courses/${course.id}/members`)}
-              className="px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 text-sm"
-            >
-              Manage Members
-            </button>
-          )}
-          {canCreateCourse && (
-            <button
-              onClick={() => navigate("/courses/new")}
-              className="px-3 py-2 rounded-lg border border-blue-300 text-blue-700 hover:bg-blue-50 text-sm"
-            >
-              + New Course
-            </button>
-          )}
-        </div>
+        </>
+      )}
 
-        {!course ? (
-          <p className="text-gray-500 text-center py-8">
-            You are not enrolled in any course yet.
-            {canCreateCourse ? " Create a course to get started." : " Ask your instructor to add you."}
-          </p>
-        ) : (
-          <>
-            {isStudent && (
-              <section className="mb-6 p-4 border border-amber-200 bg-amber-50 rounded-lg" aria-labelledby="pending-heading">
-                <h2 id="pending-heading" className="text-lg font-semibold text-amber-900 mb-2">
-                  Waiting for your evaluation
-                </h2>
-                {pending.length === 0 ? (
-                  <p className="text-sm text-amber-800">You're all caught up! No presentations are waiting for your evaluation.</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {pending.map((p) => (
-                      <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 bg-white border border-amber-100 rounded-lg px-3 py-2">
-                        <div>
-                          <p className="font-medium text-gray-900">{p.title}</p>
-                          <p className="text-xs text-gray-600">
-                            {p.date}{p.startTime ? ` ${p.startTime}` : ""} - {p.presenters.join(", ") || "TBD"}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => navigate(`/evaluation/${p.id}`)}
-                          className="px-3 py-1 rounded-lg bg-amber-600 text-white text-sm hover:bg-amber-700"
-                        >
-                          Evaluate
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-            )}
+      {showForm && createPortal(
+        <div className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4"
+             role="dialog" aria-modal="true" aria-labelledby="create-event-heading">
+          <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-lift max-h-[92vh] overflow-y-auto p-6 sm:p-8 animate-pop">
+            <h3 id="create-event-heading" className="text-xl font-semibold tracking-tight mb-1">Create New Event</h3>
+            <p className="text-sm text-ink-2 mb-6">Schedule a presentation for {course ? course.course_code : "this course"}.</p>
 
-            <p className="text-gray-600 mb-6">
-              Select a presentation to submit an evaluation or view details.
-            </p>
-
-            {isStaff && (
-              <div className="flex justify-end mb-4">
-                <button
-                  onClick={() => setShowForm(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-                >
-                  + Create Event
-                </button>
-              </div>
-            )}
+            {formError && <Alert>{formError}</Alert>}
 
             <div className="space-y-4">
-              {events.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No presentations yet.</p>
-              ) : (
-                events.map((event) => (
-                  <div
-                    key={event.id}
-                    className="border p-4 rounded-lg shadow-sm hover:shadow transition cursor-pointer bg-white"
-                    onClick={() => navigate(`/evaluation/${event.id}`)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-xl font-semibold">{event.title}</h2>
-                          {event.isMine && <Badge tone="blue">Your presentation</Badge>}
-                          {event.evaluatedByMe && <Badge tone="green">Evaluated</Badge>}
-                          {event.upcoming && <Badge tone="gray">Upcoming</Badge>}
-                        </div>
-                        <p className="text-gray-600 mt-1">
-                          Date: {event.date}
-                          {timeRange(event) && <span className="ml-3">Time: {timeRange(event)}</span>}
-                        </p>
-                        {event.location && <p className="text-gray-600">Location: {event.location}</p>}
-                        <p className="text-gray-600">Presenter: {event.presenter || "TBD"}</p>
-                      </div>
-                      {isStaff && (
-                        <div className="flex flex-col items-end gap-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/admin/results/${event.id}`);
-                            }}
-                            className="text-sm text-blue-600 hover:text-blue-700"
-                          >
-                            View Results
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/event/edit/${event.id}`);
-                            }}
-                            className="text-sm text-gray-600 hover:text-gray-800"
-                          >
-                            Edit
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
+              <Field id="new-title" label="Event Title">
+                <Input id="new-title" type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
+                       placeholder="e.g. Final project demo" />
+              </Field>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Field id="new-date" label="Date">
+                  <Input id="new-date" type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} />
+                </Field>
+                <Field id="new-start" label="Start Time">
+                  <Input id="new-start" type="time" value={newStart} onChange={(e) => setNewStart(e.target.value)} />
+                </Field>
+                <Field id="new-end" label="End Time">
+                  <Input id="new-end" type="time" value={newEnd} onChange={(e) => setNewEnd(e.target.value)} />
+                </Field>
+              </div>
+
+              <Field id="new-location" label="Location">
+                <Input id="new-location" type="text" value={newLocation} onChange={(e) => setNewLocation(e.target.value)}
+                       placeholder="e.g. Mudd 833" />
+              </Field>
+
+              <Field id="new-description" label="Description">
+                <Textarea id="new-description" value={newDescription} onChange={(e) => setNewDescription(e.target.value)} />
+              </Field>
+
+              <fieldset>
+                <legend className="block text-sm font-medium text-ink mb-1.5">Select Presenters</legend>
+                <div className="max-h-44 overflow-y-auto rounded-lg border border-hair divide-y divide-hair">
+                  {members.length === 0 ? (
+                    <p className="text-ink-3 text-sm p-3">No students available</p>
+                  ) : (
+                    members.map((member) => (
+                      <label key={member.id} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-canvas">
+                        <input
+                          type="checkbox"
+                          checked={selectedPresenters.includes(member.id)}
+                          onChange={() => togglePresenter(member.id)}
+                          className="w-4 h-4 accent-accent"
+                        />
+                        <span>{member.name}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </fieldset>
             </div>
-          </>
-        )}
 
-        {showForm && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
-            <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-              <h3 className="text-xl font-bold mb-4">Create New Event</h3>
-
-              {formError && (
-                <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                  {formError}
-                </div>
-              )}
-
-              <label className="block mb-2 text-sm font-medium">Event Title</label>
-              <input
-                type="text"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                className="w-full border rounded-lg p-2 mb-3"
-              />
-
-              <label className="block mb-2 text-sm font-medium">Date</label>
-              <input
-                type="date"
-                value={newDate}
-                onChange={(e) => setNewDate(e.target.value)}
-                className="w-full border rounded-lg p-2 mb-3"
-              />
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block mb-2 text-sm font-medium">Start Time</label>
-                  <input
-                    type="time"
-                    value={newStart}
-                    onChange={(e) => setNewStart(e.target.value)}
-                    className="w-full border rounded-lg p-2 mb-3"
-                  />
-                </div>
-                <div>
-                  <label className="block mb-2 text-sm font-medium">End Time</label>
-                  <input
-                    type="time"
-                    value={newEnd}
-                    onChange={(e) => setNewEnd(e.target.value)}
-                    className="w-full border rounded-lg p-2 mb-3"
-                  />
-                </div>
-              </div>
-
-              <label className="block mb-2 text-sm font-medium">Location</label>
-              <input
-                type="text"
-                value={newLocation}
-                onChange={(e) => setNewLocation(e.target.value)}
-                className="w-full border rounded-lg p-2 mb-3"
-              />
-
-              <label className="block mb-2 text-sm font-medium">Description</label>
-              <textarea
-                value={newDescription}
-                onChange={(e) => setNewDescription(e.target.value)}
-                className="w-full border rounded-lg p-2 mb-3"
-              />
-
-              <label className="block mb-2 text-sm font-medium">Select Presenters</label>
-              <div className="max-h-40 overflow-y-auto border rounded-lg p-2 mb-4">
-                {members.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No students available</p>
-                ) : (
-                  members.map((member) => (
-                    <label
-                      key={member.id}
-                      className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedPresenters.includes(member.id)}
-                        onChange={() => togglePresenter(member.id)}
-                        className="w-4 h-4"
-                      />
-                      <span>{member.name}</span>
-                    </label>
-                  ))
-                )}
-              </div>
-
-              <div className="flex justify-end space-x-3">
-                <button
-                  className="px-4 py-2 rounded-lg bg-gray-300 hover:bg-gray-400"
-                  onClick={() => { setShowForm(false); setFormError(""); }}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-                  onClick={handleCreateEvent}
-                >
-                  Create
-                </button>
-              </div>
+            <div className="flex justify-end gap-2 mt-8">
+              <Button variant="secondary" onClick={() => { setShowForm(false); resetForm(); }}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateEvent}>
+                Create
+              </Button>
             </div>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      , document.body)}
+    </AppShell>
   );
 }

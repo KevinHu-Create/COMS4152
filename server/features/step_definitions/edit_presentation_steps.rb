@@ -30,7 +30,7 @@ When("I delete the event but cancel") do
 end
 
 Then("the card for {string} should show {string}") do |title, text|
-  card = find("h2", text: title).ancestor("div.border")
+  card = find("h2", text: title).ancestor("[data-testid='event-card']")
   expect(card).to have_content(text)
 end
 

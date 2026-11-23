@@ -24,8 +24,8 @@ Feature: Create a presentation event
     And I set the "Location" field to "Mudd 833"
     And I click "Create"
     Then I should see "Introduction to AI" in the event list
-    And I should see "Time: 10:00 - 10:15"
-    And I should see "Location: Mudd 833"
+    And the card for "Introduction to AI" should show "10:00 – 10:15"
+    And the card for "Introduction to AI" should show "Mudd 833"
 
   Scenario: An event cannot end before it starts
     Given I am signed in as an instructor

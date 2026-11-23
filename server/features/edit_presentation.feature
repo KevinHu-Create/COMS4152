@@ -11,7 +11,7 @@ Feature: Edit and delete presentation events
     And I fill in "Location" with "Online"
     And I click "Save Changes"
     Then I should see "Intro to Machine Learning" in the event list
-    And I should see "Location: Online"
+    And the card for "Intro to Machine Learning" should show "Online"
     And I should not see "Introduction to AI"
 
   Scenario: Change who presents
@@ -22,7 +22,7 @@ Feature: Edit and delete presentation events
     And I uncheck "Bob Lee"
     And I check "Alice"
     And I click "Save Changes"
-    Then the card for "Introduction to AI" should show "Presenter: Alice"
+    Then the card for "Introduction to AI" should show "Presented by Alice"
 
   Scenario: Times must be in the right order
     Given I am signed in as an instructor

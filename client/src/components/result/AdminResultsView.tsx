@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getPresentationStats } from "../../api";
+import { AppShell, Avatar, BackLink, Button, Card, EmptyState, LoadingScreen, PageHeader, StatTile } from "../ui/ui";
+import { formatDate } from "../ui/format";
+import { LockedIllustration } from "../ui/illustrations";
 
 type Evaluation = {
   id: number;
@@ -30,6 +33,13 @@ type StatsData = {
   };
 };
 
+function formatSubmitted(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
 export function AdminEventResults() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -51,179 +61,86 @@ export function AdminEventResults() {
       } else {
         setData(result);
       }
-    } catch (err) {
+    } catch {
       setError("Failed to load data");
     } finally {
       setLoading(false);
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Loading...</p>
-      </div>
-    );
-  }
+  if (loading) return <LoadingScreen />;
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full">
-          <p className="text-red-600 font-semibold mb-2">{error || "Event not found."}</p>
-          <p className="text-gray-600 text-sm mb-4">
-            Please check the URL or go back to the events list.
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate("/events")}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition text-sm"
-          >
-            Back to Events
-          </button>
-        </div>
-      </div>
+      <AppShell width="max-w-3xl">
+        <BackLink />
+        <Card>
+          <EmptyState illustration={<LockedIllustration />} title={error || "Event not found."}
+                      action={<Button onClick={() => navigate("/events")}>Back to Events</Button>}>
+            <p>Results are only available to the course's instructors and TAs.</p>
+          </EmptyState>
+        </Card>
+      </AppShell>
     );
   }
 
   const { presentation, evaluations, stats } = data;
 
-  function formatAvg(value: number | null) {
-    return value?.toFixed(1) || "-";
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl p-6">
-        <div className="flex justify-between items-start gap-4 mb-4">
-          <div>
-            <button
-              type="button"
-              onClick={() => navigate("/events")}
-              className="text-xs text-blue-600 hover:text-blue-700 mb-2"
-            >
-              Back to events
-            </button>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Admin Results - {presentation.title}
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Presenter: <span className="font-semibold">{presentation.presenter || "TBD"}</span>
-              <br />
-              Date: <span className="font-medium">{presentation.date}</span>
-            </p>
-          </div>
+    <AppShell>
+      <BackLink />
+      <PageHeader
+        eyebrow="Results"
+        title={presentation.title}
+        subtitle={<>{presentation.presenter ? `Presented by ${presentation.presenter}` : "Presenter to be announced"} · {formatDate(presentation.date)}</>}
+      />
 
-          <div className="text-right">
-            <p className="text-sm text-gray-500">Total evaluations</p>
-            <p className="text-2xl font-semibold text-gray-900">
-              {stats.totalEvaluations}
-            </p>
-          </div>
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-10">
+        <div className="col-span-2 lg:col-span-1">
+          <StatTile elevated label="Total evaluations" value={stats.totalEvaluations} max={null} />
         </div>
+        <StatTile elevated label="Clarity" value={stats.avgClarity} />
+        <StatTile elevated label="Organization" value={stats.avgOrganization} accent="#5e5ce6" />
+        <StatTile elevated label="Delivery" value={stats.avgDelivery} accent="#30b0c7" />
+        <StatTile elevated label="Overall" value={stats.avgOverall} accent="#ff9f0a" />
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-            <p className="text-xs font-semibold text-blue-700 uppercase mb-1">
-              Clarity
-            </p>
-            <p className="text-2xl font-bold text-blue-900">
-              {formatAvg(stats.avgClarity)}
-            </p>
-            <p className="text-xs text-blue-700 mt-1">Average (1-5)</p>
-          </div>
-
-          <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
-            <p className="text-xs font-semibold text-indigo-700 uppercase mb-1">
-              Organization
-            </p>
-            <p className="text-2xl font-bold text-indigo-900">
-              {formatAvg(stats.avgOrganization)}
-            </p>
-            <p className="text-xs text-indigo-700 mt-1">Average (1-5)</p>
-          </div>
-
-          <div className="bg-teal-50 border border-teal-100 rounded-xl p-4">
-            <p className="text-xs font-semibold text-teal-700 uppercase mb-1">
-              Delivery
-            </p>
-            <p className="text-2xl font-bold text-teal-900">
-              {formatAvg(stats.avgDelivery)}
-            </p>
-            <p className="text-xs text-teal-700 mt-1">Average (1-5)</p>
-          </div>
-
-          <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
-            <p className="text-xs font-semibold text-amber-700 uppercase mb-1">
-              Overall
-            </p>
-            <p className="text-2xl font-bold text-amber-900">
-              {formatAvg(stats.avgOverall)}
-            </p>
-            <p className="text-xs text-amber-700 mt-1">Average (1-5)</p>
-          </div>
-        </div>
-
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">
-          Individual Evaluations
-        </h2>
-
-        <div className="overflow-x-auto rounded-xl border border-gray-200">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-2 text-left font-medium text-gray-600">
-                  Evaluator
-                </th>
-                <th className="px-4 py-2 text-center font-medium text-gray-600">
-                  Clarity
-                </th>
-                <th className="px-4 py-2 text-center font-medium text-gray-600">
-                  Organization
-                </th>
-                <th className="px-4 py-2 text-center font-medium text-gray-600">
-                  Delivery
-                </th>
-                <th className="px-4 py-2 text-center font-medium text-gray-600">
-                  Overall
-                </th>
-                <th className="px-4 py-2 text-left font-medium text-gray-600">
-                  Comments
-                </th>
-                <th className="px-4 py-2 text-right font-medium text-gray-600">
-                  Submitted
-                </th>
+      <h2 className="text-lg font-semibold tracking-tight mb-4">Individual Evaluations</h2>
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs uppercase tracking-wider text-ink-3 bg-canvas border-b border-hair">
+                <th className="px-5 py-3 font-medium">Evaluator</th>
+                <th className="px-3 py-3 font-medium text-center">Clarity</th>
+                <th className="px-3 py-3 font-medium text-center">Organization</th>
+                <th className="px-3 py-3 font-medium text-center">Delivery</th>
+                <th className="px-3 py-3 font-medium text-center">Overall</th>
+                <th className="px-5 py-3 font-medium">Comments</th>
+                <th className="px-5 py-3 font-medium text-right">Submitted</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 bg-white">
+            <tbody className="divide-y divide-hair">
               {evaluations.map((e) => (
-                <tr key={e.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 whitespace-nowrap font-medium text-gray-800">
-                    {e.evaluatorName}
+                <tr key={e.id} className="hover:bg-canvas/60">
+                  <td className="px-5 py-3.5 whitespace-nowrap">
+                    <span className="flex items-center gap-2.5 font-medium text-ink">
+                      <Avatar name={e.evaluatorName} size="sm" />
+                      {e.evaluatorName}
+                    </span>
                   </td>
-                  <td className="px-4 py-2 text-center">{e.clarity}</td>
-                  <td className="px-4 py-2 text-center">{e.organization}</td>
-                  <td className="px-4 py-2 text-center">{e.delivery}</td>
-                  <td className="px-4 py-2 text-center font-semibold">
-                    {e.overall}
-                  </td>
-                  <td className="px-4 py-2 max-w-xs">
-                    <p className="text-gray-700 text-xs sm:text-sm">
-                      {e.comments || "-"}
-                    </p>
-                  </td>
-                  <td className="px-4 py-2 text-right text-xs text-gray-500 whitespace-nowrap">
-                    {e.submittedAt}
-                  </td>
+                  <td className="px-3 py-3.5 text-center">{e.clarity}</td>
+                  <td className="px-3 py-3.5 text-center">{e.organization}</td>
+                  <td className="px-3 py-3.5 text-center">{e.delivery}</td>
+                  <td className="px-3 py-3.5 text-center font-semibold">{e.overall}</td>
+                  <td className="px-5 py-3.5 min-w-[14rem] max-w-sm text-ink-2">{e.comments || "-"}</td>
+                  <td className="px-5 py-3.5 text-right text-ink-3 whitespace-nowrap">{formatSubmitted(e.submittedAt)}</td>
                 </tr>
               ))}
 
               {evaluations.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={7}
-                    className="px-4 py-4 text-center text-sm text-gray-500"
-                  >
+                  <td colSpan={7} className="px-5 py-10 text-center text-ink-3">
                     No evaluations submitted yet for this event.
                   </td>
                 </tr>
@@ -231,7 +148,7 @@ export function AdminEventResults() {
             </tbody>
           </table>
         </div>
-      </div>
-    </div>
+      </Card>
+    </AppShell>
   );
 }

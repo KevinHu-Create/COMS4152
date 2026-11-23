@@ -9,9 +9,9 @@ Given("{word} is a student in the course") do |name|
 end
 
 Then("I should see its date and presenter") do
-  card = find("h2", text: @presentation.title).ancestor("div.border")
-  expect(card).to have_content("Date: #{@presentation.presentation_date.iso8601}")
-  expect(card).to have_content("Presenter: #{@presentation.presenters.map(&:name).join(', ')}")
+  card = find("h2", text: @presentation.title).ancestor("[data-testid='event-card']")
+  expect(card).to have_content(@presentation.presentation_date.strftime("%a, %b %-d, %Y"))
+  expect(card).to have_content("Presented by #{@presentation.presenters.map(&:name).join(', ')}")
 end
 
 When("I enter {string} as the event title") do |title|
@@ -39,8 +39,8 @@ end
 
 Then("{word} should be listed as its presenter") do |name|
   presentation = Presentation.last
-  card = find("h2", text: presentation.title).ancestor("div.border")
-  expect(card).to have_content("Presenter: #{name}")
+  card = find("h2", text: presentation.title).ancestor("[data-testid='event-card']")
+  expect(card).to have_content("Presented by #{name}")
   expect(presentation.presenters.map(&:name)).to eq([name])
 end
 

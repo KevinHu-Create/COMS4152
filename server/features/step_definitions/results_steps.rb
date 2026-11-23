@@ -41,7 +41,7 @@ end
 
 When("I click {string} for {string}") do |button, title|
   visit "/events" # pick up presentations created after signing in
-  find("h2", text: title).ancestor("div.border").click_on(button)
+  find("h2", text: title).ancestor("[data-testid='event-card']").click_on(button)
 end
 
 When("I open the results page for {string}") do |title|
@@ -49,7 +49,7 @@ When("I open the results page for {string}") do |title|
 end
 
 Then("I should see the total number of evaluations") do
-  expect(page).to have_content("Admin Results - #{@presentation.title}")
+  expect(page).to have_css("h1", text: @presentation.title)
   expect(value_below("Total evaluations")).to eq(@presentation.evaluations.count.to_s)
 end
 

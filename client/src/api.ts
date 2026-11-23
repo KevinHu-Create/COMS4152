@@ -107,8 +107,13 @@ export function getCurrentCourseId(): number | null {
   return id ? Number(id) : null;
 }
 
+export const COURSE_CHANGE_EVENT = 'course-change';
+
 export function setCurrentCourseId(id: number) {
+  if (getCurrentCourseId() === id) return;
   localStorage.setItem('courseId', String(id));
+  // Lets the sidebar and the event list stay in sync.
+  window.dispatchEvent(new CustomEvent(COURSE_CHANGE_EVENT, { detail: id }));
 }
 
 export async function getPresentations(courseId: number) {
@@ -167,8 +172,10 @@ export async function submitEvaluation(presentationId: number, data: {
   return res.json();
 }
 
-export async function getPendingEvaluations(courseId: number) {
-  const res = await fetchWithAuth(`${API_BASE}/pending_evaluations?course_id=${courseId}`);
+/** Presentations still to evaluate, in one course or (without courseId) in all of them. */
+export async function getPendingEvaluations(courseId?: number) {
+  const query = courseId ? `?course_id=${courseId}` : '';
+  const res = await fetchWithAuth(`${API_BASE}/pending_evaluations${query}`);
   return res.json();
 }
 

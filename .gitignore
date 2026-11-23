@@ -46,3 +46,4 @@ server/config/credentials/*.key
 server/coverage/
 server/tmp/local_secret.txt
 server/tmp/cucumber_client/
+server/tmp/pids/

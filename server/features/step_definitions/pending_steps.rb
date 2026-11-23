@@ -28,5 +28,5 @@ end
 
 Then("there should be no evaluation form") do
   expect(page).to have_no_button("Submit Evaluation")
-  expect(page).to have_no_css("select")
+  expect(page).to have_no_css("input[type=radio]", visible: :all)
 end

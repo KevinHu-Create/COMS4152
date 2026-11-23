@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { createCourse, getUser, setCurrentCourseId } from "../../api";
+import { Alert, AppShell, BackLink, Button, Card, EmptyState, Field, Input } from "../ui/ui";
+import { CoursesIllustration, LockedIllustration } from "../ui/illustrations";
 
 export function NewCourse() {
   const navigate = useNavigate();
@@ -31,73 +33,52 @@ export function NewCourse() {
       } else {
         setError(result.errors?.join(", ") || result.error || "Could not create the course.");
       }
-    } catch (err) {
+    } catch {
       setError("Connection error. Please try again.");
     } finally {
       setSaving(false);
     }
   }
 
-  const inputClass = "w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent";
-
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
-        <button
-          type="button"
-          onClick={() => navigate("/events")}
-          className="text-xs text-blue-600 hover:text-blue-700 mb-2"
-        >
-          Back to events
-        </button>
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Create a Course</h1>
-
-        {!canCreate ? (
-          <p className="text-red-600">Only instructors can create courses.</p>
-        ) : (
-          <>
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                {error}
-              </div>
-            )}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="course_code" className="block text-sm font-medium text-gray-700 mb-1">Course Code</label>
-                <input id="course_code" value={courseCode} onChange={(e) => setCourseCode(e.target.value)}
-                       placeholder="COMS4152" className={inputClass} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="term" className="block text-sm font-medium text-gray-700 mb-1">Term</label>
-                  <input id="term" value={term} onChange={(e) => setTerm(e.target.value)}
-                         placeholder="Fall 2026" className={inputClass} />
-                </div>
-                <div>
-                  <label htmlFor="section" className="block text-sm font-medium text-gray-700 mb-1">Section (optional)</label>
-                  <input id="section" value={section} onChange={(e) => setSection(e.target.value)}
-                         placeholder="001" className={inputClass} />
-                </div>
-              </div>
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Course Title</label>
-                <input id="title" value={title} onChange={(e) => setTitle(e.target.value)}
-                       placeholder="Engineering Software-as-a-Service" className={inputClass} />
-              </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => navigate("/events")}
-                        className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">
-                  Cancel
-                </button>
-                <button type="submit" disabled={saving}
-                        className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">
-                  {saving ? "Creating..." : "Create Course"}
-                </button>
-              </div>
-            </form>
-          </>
-        )}
-      </div>
-    </div>
+    <AppShell width="max-w-2xl">
+      <BackLink />
+      {!canCreate ? (
+        <Card>
+          <EmptyState illustration={<LockedIllustration />} title="Only instructors can create courses." />
+        </Card>
+      ) : (
+        <Card className="overflow-hidden">
+          <div className="bg-canvas/60 px-6 sm:px-10 pt-8 pb-6 flex flex-col sm:flex-row items-center gap-6 border-b border-hair">
+            <CoursesIllustration className="w-36 shrink-0" />
+            <div className="text-center sm:text-left">
+              <h1 className="text-2xl font-semibold tracking-tight">Create a Course</h1>
+              <p className="text-ink-2 mt-1">You will be its instructor. Add students and TAs next.</p>
+            </div>
+          </div>
+          <form onSubmit={handleSubmit} className="p-6 sm:p-10 space-y-5">
+            {error && <Alert>{error}</Alert>}
+            <Field id="course_code" label="Course Code">
+              <Input id="course_code" value={courseCode} onChange={(e) => setCourseCode(e.target.value)} placeholder="COMS4152" />
+            </Field>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field id="term" label="Term">
+                <Input id="term" value={term} onChange={(e) => setTerm(e.target.value)} placeholder="Fall 2026" />
+              </Field>
+              <Field id="section" label="Section (optional)">
+                <Input id="section" value={section} onChange={(e) => setSection(e.target.value)} placeholder="001" />
+              </Field>
+            </div>
+            <Field id="title" label="Course Title">
+              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Engineering Software-as-a-Service" />
+            </Field>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="secondary" onClick={() => navigate("/events")}>Cancel</Button>
+              <Button type="submit" disabled={saving}>{saving ? "Creating..." : "Create Course"}</Button>
+            </div>
+          </form>
+        </Card>
+      )}
+    </AppShell>
   );
 }

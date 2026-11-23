@@ -5,15 +5,16 @@ SCORE_CATEGORIES = [
   "Overall quality"
 ].freeze
 
+# Each category is a fieldset of 1-5 radio buttons styled as a segmented control.
 def choose_score(category, score)
-  field_after_label(category, "select").find("option[value='#{score}']").select_option
+  find("fieldset", text: category).find("label", exact_text: score.to_s).click
 end
 
 Given("I am viewing the evaluation form for {string}") do |title|
   @presentation = presentation_titled(title)
   visit "/evaluation/#{@presentation.presentation_id}"
-  expect(page).to have_css("h1", text: "Submit Evaluation")
-  expect(page).to have_content("Event: #{title}")
+  expect(page).to have_css("h1", text: title)
+  expect(page).to have_content("Submit Evaluation")
 end
 
 Given("I am not a presenter for this presentation") do
