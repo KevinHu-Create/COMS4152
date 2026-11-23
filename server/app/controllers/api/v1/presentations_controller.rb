@@ -18,15 +18,9 @@ class Api::V1::PresentationsController < ApplicationController
 
   # POST /api/v1/courses/:course_id/presentations
   def create
-    presentation = @course.presentations.build(presentation_params)
+    presentation = @course.presentations.build
 
-    if presentation.save
-      if params[:presenter_ids].present?
-        params[:presenter_ids].each do |user_id|
-          PresentationPresenter.create(presentation_id: presentation.presentation_id, user_id: user_id)
-        end
-      end
-
+    if save_with_presenters(presentation)
       render json: presentation_response(presentation), status: :created
     else
       render json: { errors: presentation.errors.full_messages }, status: :unprocessable_content
@@ -34,8 +28,9 @@ class Api::V1::PresentationsController < ApplicationController
   end
 
   # PATCH /api/v1/presentations/:id
+  # Send presenter_ids to replace the presenters ([] removes them all).
   def update
-    if @presentation.update(presentation_params)
+    if save_with_presenters(@presentation)
       render json: presentation_response(@presentation)
     else
       render json: { errors: @presentation.errors.full_messages }, status: :unprocessable_content
@@ -122,6 +117,35 @@ class Api::V1::PresentationsController < ApplicationController
     evals.average(column)&.to_f&.round(1)
   end
 
+  # Saves the attributes and presenters together, or neither.
+  def save_with_presenters(presentation)
+    saved = Presentation.transaction do
+      presentation.assign_attributes(presentation_params)
+      raise ActiveRecord::Rollback unless presentation.save && assign_presenters(presentation)
+
+      true
+    end
+    presentation.presenters.reset
+    saved
+  end
+
+  def assign_presenters(presentation)
+    return true unless params.key?(:presenter_ids)
+
+    ids = Array(params[:presenter_ids]).map(&:to_i).uniq
+    enrolled = @course.course_memberships.where(user_id: ids).pluck(:user_id)
+    if (ids - enrolled).any?
+      presentation.errors.add(:base, 'Presenters must be members of this course')
+      return false
+    end
+
+    presentation.presentation_presenters.where.not(user_id: ids).destroy_all
+    (ids - presentation.presentation_presenters.pluck(:user_id)).each do |user_id|
+      presentation.presentation_presenters.create!(user_id: user_id)
+    end
+    true
+  end
+
   def set_presentation
     @presentation = Presentation.find(params[:id])
     @course = @presentation.course
@@ -153,7 +177,9 @@ class Api::V1::PresentationsController < ApplicationController
       startTime: presentation.start_time,
       endTime: presentation.end_time,
       location: presentation.location,
-      presenter: presentation.presenters.map(&:name).join(', ')
+      courseId: presentation.course_id,
+      presenter: presentation.presenters.map(&:name).join(', '),
+      presenters: presentation.presenters.map { |u| { id: u.user_id, name: u.name } }
     }
   end
 end

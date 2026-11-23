@@ -9,7 +9,15 @@ interface EventItem {
   id: number;
   title: string;
   date: string;
+  startTime: string | null;
+  endTime: string | null;
+  location: string | null;
   presenter: string;
+}
+
+function timeRange(event: EventItem) {
+  if (event.startTime && event.endTime) return `${event.startTime} - ${event.endTime}`;
+  return event.startTime || "";
 }
 
 interface Member {
@@ -28,6 +36,10 @@ export function EventList() {
   const [showForm, setShowForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDate, setNewDate] = useState("");
+  const [newStart, setNewStart] = useState("");
+  const [newEnd, setNewEnd] = useState("");
+  const [newLocation, setNewLocation] = useState("");
+  const [newDescription, setNewDescription] = useState("");
   const [selectedPresenters, setSelectedPresenters] = useState<number[]>([]);
   const [formError, setFormError] = useState("");
 
@@ -101,6 +113,10 @@ export function EventList() {
       const result = await createPresentation(course.id, {
         title: newTitle,
         presentation_date: newDate,
+        start_time: newStart || undefined,
+        end_time: newEnd || undefined,
+        location: newLocation || undefined,
+        description: newDescription || undefined,
         presenter_ids: selectedPresenters,
       });
 
@@ -108,6 +124,10 @@ export function EventList() {
         loadEvents(course.id);
         setNewTitle("");
         setNewDate("");
+        setNewStart("");
+        setNewEnd("");
+        setNewLocation("");
+        setNewDescription("");
         setSelectedPresenters([]);
         setFormError("");
         setShowForm(false);
@@ -241,19 +261,34 @@ export function EventList() {
                     <div className="flex justify-between items-start">
                       <div>
                         <h2 className="text-xl font-semibold">{event.title}</h2>
-                        <p className="text-gray-600 mt-1">Date: {event.date}</p>
+                        <p className="text-gray-600 mt-1">
+                          Date: {event.date}
+                          {timeRange(event) && <span className="ml-3">Time: {timeRange(event)}</span>}
+                        </p>
+                        {event.location && <p className="text-gray-600">Location: {event.location}</p>}
                         <p className="text-gray-600">Presenter: {event.presenter || "TBD"}</p>
                       </div>
                       {isStaff && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/admin/results/${event.id}`);
-                          }}
-                          className="text-sm text-blue-600 hover:text-blue-700"
-                        >
-                          View Results
-                        </button>
+                        <div className="flex flex-col items-end gap-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/admin/results/${event.id}`);
+                            }}
+                            className="text-sm text-blue-600 hover:text-blue-700"
+                          >
+                            View Results
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/event/edit/${event.id}`);
+                            }}
+                            className="text-sm text-gray-600 hover:text-gray-800"
+                          >
+                            Edit
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -265,7 +300,7 @@ export function EventList() {
 
         {showForm && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
-            <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md">
+            <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
               <h3 className="text-xl font-bold mb-4">Create New Event</h3>
 
               {formError && (
@@ -287,6 +322,42 @@ export function EventList() {
                 type="date"
                 value={newDate}
                 onChange={(e) => setNewDate(e.target.value)}
+                className="w-full border rounded-lg p-2 mb-3"
+              />
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block mb-2 text-sm font-medium">Start Time</label>
+                  <input
+                    type="time"
+                    value={newStart}
+                    onChange={(e) => setNewStart(e.target.value)}
+                    className="w-full border rounded-lg p-2 mb-3"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-2 text-sm font-medium">End Time</label>
+                  <input
+                    type="time"
+                    value={newEnd}
+                    onChange={(e) => setNewEnd(e.target.value)}
+                    className="w-full border rounded-lg p-2 mb-3"
+                  />
+                </div>
+              </div>
+
+              <label className="block mb-2 text-sm font-medium">Location</label>
+              <input
+                type="text"
+                value={newLocation}
+                onChange={(e) => setNewLocation(e.target.value)}
+                className="w-full border rounded-lg p-2 mb-3"
+              />
+
+              <label className="block mb-2 text-sm font-medium">Description</label>
+              <textarea
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
                 className="w-full border rounded-lg p-2 mb-3"
               />
 

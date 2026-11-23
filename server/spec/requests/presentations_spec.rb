@@ -56,7 +56,7 @@ RSpec.describe "Presentations API", type: :request do
   end
 
   describe "POST /api/v1/courses/:course_id/presentations" do
-    let(:partner) { create(:user, name: "Sarah") }
+    let(:partner) { create(:user, name: "Sarah").tap { |u| create(:course_membership, course: course, user: u) } }
     let(:params) do
       { title: "Final Pitch", presentation_date: "2026-12-01", start_time: "14:00",
         location: "Mudd 535", presenter_ids: [presenter.user_id, partner.user_id] }
@@ -70,6 +70,27 @@ RSpec.describe "Presentations API", type: :request do
       created = Presentation.find(json["id"])
       expect(created.presenters).to contain_exactly(presenter, partner)
       expect(created.presentation_date).to eq(Date.new(2026, 12, 1))
+      expect(json["presenters"]).to contain_exactly({ "id" => presenter.user_id, "name" => "Kevin" },
+                                                    { "id" => partner.user_id, "name" => "Sarah" })
+      expect(json["courseId"]).to eq(course.course_id)
+    end
+
+    it "refuses presenters who are not in the course and saves nothing" do
+      expect {
+        post "/api/v1/courses/#{course.course_id}/presentations",
+             params: params.merge(presenter_ids: [presenter.user_id, outsider.user_id]), headers: auth_headers(instructor)
+      }.not_to change(Presentation, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(json["errors"]).to include("Presenters must be members of this course")
+      expect(PresentationPresenter.count).to eq(0)
+    end
+
+    it "rejects an end time before the start time" do
+      post "/api/v1/courses/#{course.course_id}/presentations",
+           params: params.merge(start_time: "14:00", end_time: "13:30"), headers: auth_headers(instructor)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(json["errors"]).to include("End time must be after the start time")
     end
 
     it "lets a TA create a presentation without presenters" do
@@ -111,6 +132,46 @@ RSpec.describe "Presentations API", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(presentation.reload).to have_attributes(title: "Renamed Demo", location: "Online")
+    end
+
+    it "replaces the presenters" do
+      newcomer = create(:user, name: "Sarah")
+      create(:course_membership, course: course, user: newcomer)
+
+      patch "/api/v1/presentations/#{presentation.presentation_id}",
+            params: { presenter_ids: [newcomer.user_id] }, headers: auth_headers(instructor), as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(presentation.reload.presenters).to contain_exactly(newcomer)
+      expect(json["presenter"]).to eq("Sarah")
+    end
+
+    it "removes every presenter when given an empty list" do
+      patch "/api/v1/presentations/#{presentation.presentation_id}",
+            params: { presenter_ids: [] }, headers: auth_headers(instructor), as: :json
+      expect(presentation.reload.presenters).to be_empty
+    end
+
+    it "keeps the presenters when presenter_ids is not sent" do
+      patch "/api/v1/presentations/#{presentation.presentation_id}",
+            params: { location: "Online" }, headers: auth_headers(instructor), as: :json
+      expect(presentation.reload.presenters).to contain_exactly(presenter)
+    end
+
+    it "keeps the old details when the new presenters are invalid" do
+      patch "/api/v1/presentations/#{presentation.presentation_id}",
+            params: { title: "Changed", presenter_ids: [outsider.user_id] }, headers: auth_headers(instructor), as: :json
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(presentation.reload.title).to eq("Team Demo")
+      expect(presentation.presenters).to contain_exactly(presenter)
+    end
+
+    it "updates the time and description" do
+      patch "/api/v1/presentations/#{presentation.presentation_id}",
+            params: { start_time: "09:00", end_time: "09:20", description: "Updated agenda" },
+            headers: auth_headers(instructor), as: :json
+      expect(presentation.reload).to have_attributes(start_time: "09:00", end_time: "09:20", description: "Updated agenda")
     end
 
     it "rejects a blank title" do

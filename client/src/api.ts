@@ -121,16 +121,35 @@ export async function getPresentation(id: number) {
   return res.json();
 }
 
-export async function createPresentation(courseId: number, data: {
+export interface PresentationInput {
   title: string;
   description?: string;
   presentation_date: string;
+  start_time?: string;
+  end_time?: string;
+  location?: string;
   presenter_ids?: number[];
-}) {
+}
+
+export async function createPresentation(courseId: number, data: PresentationInput) {
   const res = await fetchWithAuth(`${API_BASE}/courses/${courseId}/presentations`, {
     method: 'POST',
     body: JSON.stringify(data),
   });
+  return res.json();
+}
+
+export async function updatePresentation(id: number, data: Partial<PresentationInput>) {
+  const res = await fetchWithAuth(`${API_BASE}/presentations/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function deletePresentation(id: number) {
+  const res = await fetchWithAuth(`${API_BASE}/presentations/${id}`, { method: 'DELETE' });
+  if (res.status === 204) return {};
   return res.json();
 }
 
