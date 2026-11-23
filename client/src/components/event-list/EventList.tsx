@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
@@ -81,13 +81,67 @@ export function EventList() {
   const isStudent = course?.my_role === "student";
   const canCreateCourse = user?.role === "instructor" || user?.role === "admin";
 
+  const loadPending = useCallback(async (courseId: number) => {
+    try {
+      const data = await getPendingEvaluations(courseId);
+      if (Array.isArray(data)) setPending(data);
+    } catch (err) {
+      console.error("Failed to load pending evaluations", err);
+    }
+  }, []);
+
+  const loadMembers = useCallback(async (courseId: number) => {
+    try {
+      const data = await getCourseMembers(courseId);
+      if (Array.isArray(data)) {
+        setMembers(data.filter((m: Member) => m.role === "student"));
+      }
+    } catch (err) {
+      console.error("Failed to load members", err);
+    }
+  }, []);
+
+  const loadEvents = useCallback(async (courseId: number) => {
+    try {
+      const data = await getPresentations(courseId);
+      if (Array.isArray(data)) {
+        setEvents(data);
+      }
+    } catch (err) {
+      console.error("Failed to load events", err);
+    }
+  }, []);
+
+  const selectCourse = useCallback(async (next: Course | null) => {
+    shownCourseId.current = next?.id ?? null;
+    setCourse(next);
+    setEvents([]);
+    setMembers([]);
+    setPending([]);
+    setShowForm(false);
+    if (!next) return;
+
+    setCurrentCourseId(next.id);
+    await Promise.all([loadEvents(next.id), loadMembers(next.id), loadPending(next.id)]);
+  }, [loadEvents, loadMembers, loadPending]);
+
+  // Load the user's courses once and open the last one they picked.
   useEffect(() => {
-    if (!user) {
-      navigate("/login");
-      return;
+    async function loadCourses() {
+      try {
+        const data = await getCourses();
+        const list = Array.isArray(data) ? data : [];
+        setCourses(list);
+        const savedId = getCurrentCourseId();
+        await selectCourse(list.find((c) => c.id === savedId) ?? list[0] ?? null);
+      } catch (err) {
+        console.error("Failed to load courses", err);
+      } finally {
+        setLoading(false);
+      }
     }
     loadCourses();
-  }, []);
+  }, [selectCourse]);
 
   // Switch when a course is picked in the sidebar.
   useEffect(() => {
@@ -100,65 +154,7 @@ export function EventList() {
     }
     window.addEventListener(COURSE_CHANGE_EVENT, onCourseChange);
     return () => window.removeEventListener(COURSE_CHANGE_EVENT, onCourseChange);
-  }, [courses]);
-
-  async function loadCourses() {
-    try {
-      const data = await getCourses();
-      const list = Array.isArray(data) ? data : [];
-      setCourses(list);
-      const savedId = getCurrentCourseId();
-      await selectCourse(list.find((c) => c.id === savedId) ?? list[0] ?? null);
-    } catch (err) {
-      console.error("Failed to load courses", err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function selectCourse(next: Course | null) {
-    shownCourseId.current = next?.id ?? null;
-    setCourse(next);
-    setEvents([]);
-    setMembers([]);
-    setPending([]);
-    setShowForm(false);
-    if (!next) return;
-
-    setCurrentCourseId(next.id);
-    await Promise.all([loadEvents(next.id), loadMembers(next.id), loadPending(next.id)]);
-  }
-
-  async function loadPending(courseId: number) {
-    try {
-      const data = await getPendingEvaluations(courseId);
-      if (Array.isArray(data)) setPending(data);
-    } catch (err) {
-      console.error("Failed to load pending evaluations", err);
-    }
-  }
-
-  async function loadMembers(courseId: number) {
-    try {
-      const data = await getCourseMembers(courseId);
-      if (Array.isArray(data)) {
-        setMembers(data.filter((m: Member) => m.role === "student"));
-      }
-    } catch (err) {
-      console.error("Failed to load members", err);
-    }
-  }
-
-  async function loadEvents(courseId: number) {
-    try {
-      const data = await getPresentations(courseId);
-      if (Array.isArray(data)) {
-        setEvents(data);
-      }
-    } catch (err) {
-      console.error("Failed to load events", err);
-    }
-  }
+  }, [courses, selectCourse]);
 
   function resetForm() {
     setNewTitle("");

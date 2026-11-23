@@ -50,23 +50,22 @@ export function AdminEventResults() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    async function loadStats() {
+      try {
+        const result = await getPresentationStats(presentationId);
+        if (result.error) {
+          setError(result.error);
+        } else {
+          setData(result);
+        }
+      } catch {
+        setError("Failed to load data");
+      } finally {
+        setLoading(false);
+      }
+    }
     loadStats();
   }, [presentationId]);
-
-  async function loadStats() {
-    try {
-      const result = await getPresentationStats(presentationId);
-      if (result.error) {
-        setError(result.error);
-      } else {
-        setData(result);
-      }
-    } catch {
-      setError("Failed to load data");
-    } finally {
-      setLoading(false);
-    }
-  }
 
   if (loading) return <LoadingScreen />;
 
