@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Runs RSpec and Cucumber, then reports their combined coverage.
+set -e
+cd "$(dirname "$0")/.."
+rm -rf coverage
+bundle exec rspec
+bundle exec cucumber
+echo
+echo "Combined coverage (RSpec + Cucumber): coverage/index.html"

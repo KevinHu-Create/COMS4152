@@ -40,19 +40,59 @@ RSpec.describe User, type: :model do
     end
   end
 
-  describe "#authenticate" do
-    let(:user) { build(:user, password_hash: "secret-pass") }
+  describe "passwords" do
+    let(:user) { create(:user, password: "secret-pass") }
 
-    it "returns true for the right password" do
-      expect(user.authenticate("secret-pass")).to be true
+    it "stores a bcrypt hash instead of the plain-text password" do
+      expect(user.password_hash).not_to eq("secret-pass")
+      expect(user.password_hash).to start_with("$2")
+      expect(BCrypt::Password.new(user.password_hash)).to eq("secret-pass")
     end
 
-    it "returns false for a wrong password" do
+    it "authenticates with the right password" do
+      expect(user.authenticate("secret-pass")).to eq(user)
+    end
+
+    it "rejects a wrong password" do
       expect(user.authenticate("wrong")).to be false
     end
 
-    it "returns false for a blank password" do
-      expect(user.authenticate(nil)).to be false
+    it "rejects a blank password" do
+      expect(user.authenticate("")).to be false
+    end
+
+    it "requires a password when the account is created" do
+      user = build(:user, password: nil)
+      expect(user).not_to be_valid
+      expect(user.errors[:password]).to include("can't be blank")
+    end
+
+    it "requires at least 6 characters" do
+      user = build(:user, password: "12345")
+      expect(user).not_to be_valid
+      expect(user.errors[:password]).to include("is too short (minimum is 6 characters)")
+    end
+
+    it "keeps the existing password when other fields are updated" do
+      user.update!(name: "Renamed")
+      expect(user.reload.authenticate("secret-pass")).to eq(user)
+    end
+  end
+
+  describe ".hash_plaintext_passwords!" do
+    it "hashes passwords that are still stored in plain text" do
+      legacy = create(:user)
+      legacy.update_column(:password_hash, "OldPlainText1")
+
+      described_class.hash_plaintext_passwords!
+
+      expect(legacy.reload.password_hash).to start_with("$2")
+      expect(legacy.authenticate("OldPlainText1")).to eq(legacy)
+    end
+
+    it "leaves passwords that are already hashed alone" do
+      user = create(:user, password: "secret-pass")
+      expect { described_class.hash_plaintext_passwords! }.not_to(change { user.reload.password_hash })
     end
   end
 

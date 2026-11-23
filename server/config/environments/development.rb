@@ -22,7 +22,10 @@ Rails.application.configure do
   config.active_support.deprecation = :log
   config.active_support.disallowed_deprecation = :raise
   config.active_support.disallowed_deprecation_warnings = []
-  config.active_record.migration_error = :page_load
+  # The development database is built from ../schema.sql by the auto-seed
+  # initializer, not by migrations (those are for Heroku), so do not block
+  # requests on "pending" migrations.
+  config.active_record.migration_error = false
   config.active_record.verbose_query_logs = true
   config.active_job.verbose_enqueue_logs = true
   config.action_controller.raise_on_missing_callback_actions = true

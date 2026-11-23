@@ -29,7 +29,7 @@ class Api::V1::PresentationsController < ApplicationController
 
       render json: presentation_response(presentation), status: :created
     else
-      render json: { errors: presentation.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: presentation.errors.full_messages }, status: :unprocessable_content
     end
   end
 
@@ -38,7 +38,7 @@ class Api::V1::PresentationsController < ApplicationController
     if @presentation.update(presentation_params)
       render json: presentation_response(@presentation)
     else
-      render json: { errors: @presentation.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: @presentation.errors.full_messages }, status: :unprocessable_content
     end
   end
 

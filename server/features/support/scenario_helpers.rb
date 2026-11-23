@@ -9,14 +9,14 @@ module ScenarioHelpers
 
   def instructor_account
     @instructor_account ||= create(:user, :instructor, name: "Professor Smith",
-                                                       email: "smith@example.com", password_hash: PASSWORD)
+                                                       email: "smith@example.com", password: PASSWORD)
   end
 
   # Finds or creates a student called +name+ who is enrolled in the course.
   def student_named(name)
     @people ||= {}
     @people[name] ||= begin
-      user = create(:user, name: name, email: "#{name.parameterize}@example.com", password_hash: PASSWORD)
+      user = create(:user, name: name, email: "#{name.parameterize}@example.com", password: PASSWORD)
       create(:course_membership, course: course, user: user, role_in_course: "student")
       user
     end

@@ -1,11 +1,11 @@
 
 User.create!([
-  { user_id: 1, name: 'Demo Instructor', email: 'instructor@example.com', password_hash: 'DemoPass123!', global_role: 'instructor' },
-  { user_id: 2, name: 'Demo Student 1', email: 'student1@example.com', password_hash: 'DemoPass123!', global_role: 'student' },
-  { user_id: 3, name: 'Demo Student 2', email: 'student2@example.com', password_hash: 'DemoPass123!', global_role: 'student' },
-  { user_id: 4, name: 'Demo TA', email: 'ta@example.com', password_hash: 'DemoPass123!', global_role: 'ta' },
-  { user_id: 5, name: 'Demo Student 3', email: 'student3@example.com', password_hash: 'DemoPass123!', global_role: 'student' },
-  { user_id: 6, name: 'Demo Student 4', email: 'student4@example.com', password_hash: 'DemoPass123!', global_role: 'student' }
+  { user_id: 1, name: 'Demo Instructor', email: 'instructor@example.com', password: 'DemoPass123!', global_role: 'instructor' },
+  { user_id: 2, name: 'Demo Student 1', email: 'student1@example.com', password: 'DemoPass123!', global_role: 'student' },
+  { user_id: 3, name: 'Demo Student 2', email: 'student2@example.com', password: 'DemoPass123!', global_role: 'student' },
+  { user_id: 4, name: 'Demo TA', email: 'ta@example.com', password: 'DemoPass123!', global_role: 'ta' },
+  { user_id: 5, name: 'Demo Student 3', email: 'student3@example.com', password: 'DemoPass123!', global_role: 'student' },
+  { user_id: 6, name: 'Demo Student 4', email: 'student4@example.com', password: 'DemoPass123!', global_role: 'student' }
 ])
 
 Course.create!([

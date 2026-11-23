@@ -36,7 +36,7 @@ RSpec.describe "Evaluations API", type: :request do
     it "stops a presenter from evaluating their own presentation" do
       post "/api/v1/presentations/#{presentation.presentation_id}/evaluations",
            params: scores, headers: auth_headers(presenter)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(json["errors"]).to include("You cannot evaluate your own presentation")
     end
 
@@ -44,20 +44,20 @@ RSpec.describe "Evaluations API", type: :request do
       create(:evaluation, presentation: presentation, evaluator: student)
       post "/api/v1/presentations/#{presentation.presentation_id}/evaluations",
            params: scores, headers: auth_headers(student)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(json["errors"]).to include("Evaluator has already submitted an evaluation")
     end
 
     it "rejects scores outside 1 to 5" do
       post "/api/v1/presentations/#{presentation.presentation_id}/evaluations",
            params: scores.merge(clarity_score: 9), headers: auth_headers(student)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "rejects an evaluation with a missing score" do
       post "/api/v1/presentations/#{presentation.presentation_id}/evaluations",
            params: scores.except(:delivery_score), headers: auth_headers(student)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(json["errors"]).to include("Delivery score can't be blank")
     end
 

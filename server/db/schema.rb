@@ -1,6 +1,6 @@
 # Rails version of ../schema.sql, used to create the production (PostgreSQL)
 # database with `rails db:prepare`. Keep the two files in sync.
-ActiveRecord::Schema[7.1].define(version: 2026_11_09_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_20_000000) do
   create_table "users", primary_key: "user_id", force: :cascade do |t|
     t.text "name", null: false
     t.text "email", null: false

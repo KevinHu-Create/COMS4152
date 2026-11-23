@@ -5,14 +5,14 @@ class Api::V1::AuthController < ApplicationController
     user = User.new(
       name: params[:name],
       email: params[:email],
-      password_hash: params[:password],
+      password: params[:password],
       global_role: params[:role] || 'student'
     )
 
     if user.save
       render json: { user: user_response(user), token: generate_token(user) }, status: :created
     else
-      render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
+      render json: { errors: user.errors.full_messages }, status: :unprocessable_content
     end
   end
 

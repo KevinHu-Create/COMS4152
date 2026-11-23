@@ -40,3 +40,14 @@ Then("I should still be on the login page") do
   expect(page).to have_current_path("/login")
   expect(page).to have_button("Sign In")
 end
+
+Then("the account {string} should store an encrypted password") do |email|
+  user = User.find_by!(email: email)
+  expect(user.password_hash).not_to eq("Password123!")
+  expect(user.password_hash).to start_with("$2")
+end
+
+Then("I should still see the sign up form") do
+  expect(page).to have_current_path("/login")
+  expect(page).to have_button("Create Account")
+end

@@ -71,7 +71,7 @@ RSpec.describe "Courses API", type: :request do
 
     it "rejects a course without a title" do
       post "/api/v1/courses", params: params.except(:title), headers: auth_headers(instructor)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(json["errors"]).to include("Title can't be blank")
     end
   end
@@ -120,7 +120,7 @@ RSpec.describe "Courses API", type: :request do
     it "refuses to add someone who is already a member" do
       post "/api/v1/courses/#{course.course_id}/members",
            params: { email: student.email }, headers: auth_headers(instructor)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "forbids students from adding members" do

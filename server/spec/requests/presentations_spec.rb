@@ -60,7 +60,7 @@ RSpec.describe "Presentations API", type: :request do
     it "rejects a presentation without a date" do
       post "/api/v1/courses/#{course.course_id}/presentations",
            params: params.except(:presentation_date), headers: auth_headers(instructor)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(json["errors"]).to include("Presentation date can't be blank")
     end
 
@@ -88,7 +88,7 @@ RSpec.describe "Presentations API", type: :request do
     it "rejects a blank title" do
       patch "/api/v1/presentations/#{presentation.presentation_id}",
             params: { title: "" }, headers: auth_headers(instructor)
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(presentation.reload.title).to eq("Team Demo")
     end
 
