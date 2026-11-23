@@ -23,7 +23,7 @@ class ApplicationController < ActionController::API
     @current_user
   end
 
-  def admin_or_instructor?
-    current_user.global_role.in?(%w[admin instructor ta])
+  def forbidden!(message = 'Not authorized')
+    render json: { error: message }, status: :forbidden
   end
 end

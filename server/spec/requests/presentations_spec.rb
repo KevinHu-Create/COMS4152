@@ -6,6 +6,17 @@ RSpec.describe "Presentations API", type: :request do
   let(:student) { create(:user, name: "Alice") }
   let(:course) { create(:course, instructor: instructor) }
   let(:presentation) { create(:presentation, course: course, title: "Team Demo", presenters: [presenter]) }
+  let(:outsider) { create(:user, name: "Not Enrolled") }
+
+  before do
+    create(:course_membership, course: course, user: instructor, role_in_course: "instructor")
+    create(:course_membership, course: course, user: presenter)
+    create(:course_membership, course: course, user: student)
+  end
+
+  def course_ta
+    create(:user, :ta).tap { |ta| create(:course_membership, course: course, user: ta, role_in_course: "ta") }
+  end
 
   describe "GET /api/v1/courses/:course_id/presentations" do
     it "lists the course's presentations with presenter names" do
@@ -17,6 +28,12 @@ RSpec.describe "Presentations API", type: :request do
       expect(response).to have_http_status(:ok)
       expect(json.size).to eq(1)
       expect(json.first).to include("title" => "Team Demo", "presenter" => "Kevin")
+    end
+
+    it "hides the course's presentations from users who are not enrolled" do
+      get "/api/v1/courses/#{course.course_id}/presentations", headers: auth_headers(outsider)
+      expect(response).to have_http_status(:forbidden)
+      expect(json["error"]).to eq("You are not a member of this course")
     end
   end
 
@@ -30,6 +47,11 @@ RSpec.describe "Presentations API", type: :request do
     it "returns 404 for a missing presentation" do
       get "/api/v1/presentations/999999", headers: auth_headers(student)
       expect(response).to have_http_status(:not_found)
+    end
+
+    it "is hidden from users who are not enrolled" do
+      get "/api/v1/presentations/#{presentation.presentation_id}", headers: auth_headers(outsider)
+      expect(response).to have_http_status(:forbidden)
     end
   end
 
@@ -52,7 +74,7 @@ RSpec.describe "Presentations API", type: :request do
 
     it "lets a TA create a presentation without presenters" do
       post "/api/v1/courses/#{course.course_id}/presentations",
-           params: params.except(:presenter_ids), headers: auth_headers(create(:user, :ta))
+           params: params.except(:presenter_ids), headers: auth_headers(course_ta)
       expect(response).to have_http_status(:created)
       expect(json["presenter"]).to eq("")
     end
@@ -62,6 +84,12 @@ RSpec.describe "Presentations API", type: :request do
            params: params.except(:presentation_date), headers: auth_headers(instructor)
       expect(response).to have_http_status(:unprocessable_content)
       expect(json["errors"]).to include("Presentation date can't be blank")
+    end
+
+    it "forbids an instructor who does not teach this course" do
+      post "/api/v1/courses/#{course.course_id}/presentations",
+           params: params, headers: auth_headers(create(:user, :instructor))
+      expect(response).to have_http_status(:forbidden)
     end
 
     it "forbids students from creating presentations" do
@@ -150,6 +178,17 @@ RSpec.describe "Presentations API", type: :request do
         expect(response).to have_http_status(:ok)
         expect(json["evaluations"].map { |e| e["evaluatorName"] }).to contain_exactly("Alice", "Michael")
         expect(json["stats"]).to include("avgOverall" => 4.5, "totalEvaluations" => 2)
+      end
+
+      it "lets a TA of the course view stats" do
+        get "/api/v1/presentations/#{presentation.presentation_id}/stats", headers: auth_headers(course_ta)
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "forbids an instructor of a different course from viewing stats" do
+        get "/api/v1/presentations/#{presentation.presentation_id}/stats",
+            headers: auth_headers(create(:user, :instructor))
+        expect(response).to have_http_status(:forbidden)
       end
 
       it "forbids students from viewing stats" do
